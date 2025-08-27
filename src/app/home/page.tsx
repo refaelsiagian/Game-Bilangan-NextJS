@@ -22,6 +22,9 @@ export default function MainMenu() {
             { name: "Cari", desc: "Lorem ipsum dolor sit amet, cari bilangan yang sesuai." },
             { name: "Cocok", desc: "Lorem ipsum dolor sit amet, cocokkan bilangan yang benar." },
             { name: "Kedip", desc: "Lorem ipsum dolor sit amet, perhatikan angka yang berkedip." },
+            { name: "Manusia", desc: "Lorem ipsum dolor sit amet, perhatikan angka yang berkedip." },
+            { name: "Orang", desc: "Lorem ipsum dolor sit amet, perhatikan angka yang berkedip." },
+            { name: "Saya", desc: "Lorem ipsum dolor sit amet, perhatikan angka yang berkedip." },
         ],
     } as const;
 
