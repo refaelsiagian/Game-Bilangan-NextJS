@@ -1,103 +1,124 @@
-import Image from "next/image";
+// app/page.tsx
+"use client";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
-export default function Home() {
+export default function MainMenu() {
+  const [kategori, setKategori] = useState<"cepat" | "banyak">("cepat");
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const modes = {
+    cepat: [
+      { name: "Tulis", desc: "Lorem ipsum dolor sit amet, tulis jawabanmu langsung." },
+      { name: "Pilih", desc: "Lorem ipsum dolor sit amet, pilih jawaban yang benar." },
+      { name: "Isi", desc: "Lorem ipsum dolor sit amet, isi bagian kosong." },
+    ],
+    banyak: [
+      { name: "Cari", desc: "Lorem ipsum dolor sit amet, cari bilangan yang sesuai." },
+      { name: "Cocok", desc: "Lorem ipsum dolor sit amet, cocokkan bilangan yang benar." },
+      { name: "Kedip", desc: "Lorem ipsum dolor sit amet, perhatikan angka yang berkedip." },
+    ],
+  };
+
+  const contentVariants = {
+    initial: { height: 0, opacity: 0 },
+    animate: { height: "auto", opacity: 1 },
+    exit: { height: 0, opacity: 0 },
+    transition: { duration: 0.28, ease: "easeInOut" },
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main className="min-h-screen flex flex-col items-center p-6">
+      <h1 className="text-4xl font-bold mb-6 text-amber-400">Game Bilangan</h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* Tombol kategori */}
+      <div className="flex gap-4 mb-8">
+        <button
+          onClick={() => { setKategori("cepat"); setExpanded(null); }}
+          className={`px-6 py-2 rounded-2xl shadow-md transition ${
+            kategori === "cepat" ? "bg-blue-600 text-white" : "bg-white text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          Kerjakan Cepat
+        </button>
+        <button
+          onClick={() => { setKategori("banyak"); setExpanded(null); }}
+          className={`px-6 py-2 rounded-2xl shadow-md transition ${
+            kategori === "banyak" ? "bg-blue-600 text-white" : "bg-white text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          Kerjakan Banyak
+        </button>
+      </div>
+
+      {/* Card list mode dengan transisi antar kategori (slide) */}
+      <div className="relative w-full max-w-2xl min-h-[200px]">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={kategori}
+            initial={{ x: 100, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -100, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 120, damping: 20 }}
+            className="grid gap-4 absolute w-full"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            {modes[kategori].map((mode) => {
+              const isOpen = expanded === mode.name;
+              return (
+                <motion.div
+                  layout
+                  key={mode.name}
+                  className="bg-white rounded-2xl shadow-md overflow-hidden"
+                  transition={{ layout: { type: "spring", stiffness: 300, damping: 30 } }}
+                >
+                  {/* Header card */}
+                  <motion.button
+                    layout="position"
+                    onClick={() => setExpanded(isOpen ? null : mode.name)}
+                    className="w-full text-left px-6 py-4 flex justify-between items-center"
+                    aria-expanded={isOpen}
+                  >
+                    <h2 className="text-xl font-semibold">{mode.name}</h2>
+                    <span className="text-gray-500">{isOpen ? "▲" : "▼"}</span>
+                  </motion.button>
+
+                  {/* Konten expand -> pakai scaleY supaya tutupnya mulus */}
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        // pakai variants supaya animasi height dari/ke "auto" bekerja
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        variants={contentVariants}
+                        className="px-6 pb-6 flex flex-col gap-4 overflow-hidden"
+                        // style transformOrigin tidak perlu kalau pakai height
+                      >
+                        <p className="text-gray-600">{mode.desc}</p>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Pilih Kesulitan
+                          </label>
+                          <select className="w-full border rounded-lg px-3 py-2">
+                            <option>Mudah</option>
+                            <option>Sedang</option>
+                            <option>Sulit</option>
+                          </select>
+                        </div>
+
+                        <button className="self-start px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
+                          Main
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </main>
   );
 }
