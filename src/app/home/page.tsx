@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation"; // 👈 import router
 import Expandable from "@/components/Expandable";
 import Select from "@/components/Select";
 
@@ -10,11 +11,12 @@ export default function MainMenu() {
 
     // Difficulty disimpan per mode (key = mode.name)
     const [difficulty, setDifficulty] = useState<Record<string, string>>({});
+    const router = useRouter(); // 👈 inisialisasi router
+    const [loadingMode, setLoadingMode] = useState<string | null>(null); // mode yang sedang loading
 
     const modes = {
         cepat: [
             { name: "Tulis", desc: "Lorem ipsum dolor sit amet, tulis jawabanmu langsung. Lorem ipsum dolor sit amet, tulis jawabanmu langsung. Lorem ipsum dolor sit amet, tulis jawabanmu langsung." },
-            { name: "Lari", desc: "Lorem ipsum dolor sit amet, tulis jawabanmu langsung. Lorem ipsum dolor sit amet, tulis jawabanmu langsung. Lorem ipsum dolor sit amet, tulis jawabanmu langsung." },
             { name: "Pilih", desc: "Lorem ipsum dolor sit amet, pilih jawaban yang benar." },
             { name: "Isi", desc: "Lorem ipsum dolor sit amet, isi bagian kosong." },
         ],
@@ -22,9 +24,6 @@ export default function MainMenu() {
             { name: "Cari", desc: "Lorem ipsum dolor sit amet, cari bilangan yang sesuai." },
             { name: "Cocok", desc: "Lorem ipsum dolor sit amet, cocokkan bilangan yang benar." },
             { name: "Kedip", desc: "Lorem ipsum dolor sit amet, perhatikan angka yang berkedip." },
-            { name: "Manusia", desc: "Lorem ipsum dolor sit amet, perhatikan angka yang berkedip." },
-            { name: "Orang", desc: "Lorem ipsum dolor sit amet, perhatikan angka yang berkedip." },
-            { name: "Saya", desc: "Lorem ipsum dolor sit amet, perhatikan angka yang berkedip." },
         ],
     } as const;
 
@@ -37,6 +36,13 @@ export default function MainMenu() {
     // Helper untuk dapatkan difficulty untuk mode tertentu (default = "Mudah")
     const getDifficulty = (modeName: string) => difficulty[modeName] ?? "Mudah";
 
+    const handlePlay = (modeName: string) => {
+        setLoadingMode(modeName); // tombol mode ini jadi loading
+        setTimeout(() => {
+            router.push(`/game?mode=${modeName}&diff=${getDifficulty(modeName)}`);
+        }, 800); // kasih delay 800ms biar spinner kelihatan
+    };
+
     return (
         <main className="min-h-screen flex flex-col items-center p-6">
             <h1 className="text-4xl font-bold mb-6 text-amber-400">Game Bilangan</h1>
@@ -45,13 +51,13 @@ export default function MainMenu() {
             <div className="flex gap-4 mb-8">
                 <button
                     onClick={() => { setKategori("cepat"); setExpanded(null); }}
-                    className={`px-6 py-2 rounded-2xl shadow-md transition ${kategori === "cepat" ? "bg-[#624b99] text-white" : "bg-white text-gray-700 hover:bg-gray-200"}`}
+                    className={`px-6 py-2 rounded-2xl shadow-md transition ${kategori === "cepat" ? "bg-theme-purple-900 text-white" : "bg-[#f7f4ff] text-gray-700 hover:bg-gray-200"}`}
                 >
                     Kerjakan Cepat
                 </button>
                 <button
                     onClick={() => { setKategori("banyak"); setExpanded(null); }}
-                    className={`px-6 py-2 rounded-2xl shadow-md transition ${kategori === "banyak" ? "bg-[#624b99] text-white" : "bg-white text-gray-700 hover:bg-gray-200"}`}
+                    className={`px-6 py-2 rounded-2xl shadow-md transition ${kategori === "banyak" ? "bg-theme-purple-900 text-white" : "bg-white text-gray-700 hover:bg-gray-200"}`}
                 >
                     Kerjakan Banyak
                 </button>
@@ -71,6 +77,7 @@ export default function MainMenu() {
                         {/* Map setiap mode */}
                         {modes[kategori].map((mode) => {
                             const isOpen = expanded === mode.name;
+                            const isLoading = loadingMode === mode.name;
                             return (
                                 <motion.div
                                     layout
@@ -108,8 +115,16 @@ export default function MainMenu() {
                                                 </div>
 
                                                 {/* Tombol main */}
-                                                <button className="px-10 py-2 bg-[#795cbc] text-white rounded-lg shadow hover:bg-[#624b99] transition">
-                                                    Main
+                                                <button
+                                                    onClick={() => handlePlay(mode.name)}
+                                                    disabled={isLoading}
+                                                    className="px-10 py-2 bg-theme-purple-850 text-white rounded-lg shadow hover:bg-theme-purple-900 transition flex items-center justify-center"
+                                                >
+                                                    {isLoading ? (
+                                                        <span className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                                    ) : (
+                                                        "Main"
+                                                    )}
                                                 </button>
                                             </div>
                                         </div>

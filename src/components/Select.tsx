@@ -95,7 +95,7 @@ export default function Select({ options, value, onChange }: CustomSelectProps) 
             <button
                 ref={buttonRef}
                 type="button"
-                className="w-40 bg-[#dbccff] text-left px-3 py-2 rounded-lg shadow hover:bg-[#d2bfff] transition flex justify-between items-center"
+                className="w-40 bg-theme-purple-300 text-left px-3 py-2 rounded-lg shadow hover:bg-theme-purple-350 transition flex justify-between items-center"
                 onClick={handleToggle}
             >
                 {selected ? selected.name : "Pilih Kesulitan"}
@@ -118,7 +118,7 @@ export default function Select({ options, value, onChange }: CustomSelectProps) 
                         {options.map((opt) => (
                             <li
                                 key={opt.value}
-                                className="px-3 py-2 cursor-pointer hover:bg-[#dbccff]"
+                                className="px-3 py-2 cursor-pointer hover:bg-theme-purple-300 transition"
                                 onClick={() => {
                                     onChange(opt.value);
                                     setOpen(false);
