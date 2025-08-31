@@ -71,23 +71,27 @@ export default function Game() {
     } | null>(null);
 
     // useCallback biar tidak perlu declare ulang tiap render (untuk dependency useEffect)
-    const endGame = useCallback((msg: string) => {
-        setGameActive(false);
-
-        const jawabanUser = kataArray.join(" ").trim();
-        const jawabanBenar = terbilang(Number(targetNumber));
-
-        // Highlight jawaban
-        if (jawabanUser.length > 0) {
-            setHighlightedAnswer(highlightAnswer(jawabanUser, jawabanBenar));
-        } else {
-            setHighlightedAnswer(null);
-        }
-
-        const isGameOver = msg.includes("Waktu habis") || msg.includes("Nyawa habis") || msg.includes("Game diakhiri");
+    // helper untuk siapkan data overlay endgame
+    function prepareEndGameOverlay({
+        msg,
+        jawabanUser,
+        jawabanBenar,
+        difficulty,
+        timer,
+    }: {
+        msg: string;
+        jawabanUser: string;
+        jawabanBenar: string;
+        difficulty: "mudah" | "sedang" | "sulit";
+        timer: number;
+    }) {
+        const isGameOver =
+            msg.includes("Waktu habis") ||
+            msg.includes("Nyawa habis") ||
+            msg.includes("Game diakhiri");
         const title = isGameOver ? "Game Over" : "Game Completed";
 
-        // Hitung kata benar berturut-turut dari awal
+        // hitung kata benar berturut-turut
         const userWords = jawabanUser.split(" ");
         const targetWords = jawabanBenar.split(" ");
         let matchedUntil = 0;
@@ -99,7 +103,7 @@ export default function Game() {
         const scoreDetail = difficultyScore[difficulty];
         const pointsCorrect = matchedUntil * scoreDetail.correct;
 
-        // Poin selesai & bonus waktu cuma kalau game berhasil (bukan game over)
+        // poin selesai & bonus waktu hanya kalau sukses
         const pointsCompleted = !isGameOver ? scoreDetail.completed : 0;
         const pointsTimeBonus = !isGameOver ? timer * scoreDetail.timeBonus : 0;
         const totalPoints = pointsCompleted + pointsCorrect + pointsTimeBonus;
@@ -113,10 +117,16 @@ export default function Game() {
                     {!isGameOver && <span className="text-right">{pointsCompleted}</span>}
 
                     <span>Kata Benar</span>
-                    <span className="text-right">{matchedUntil} x {scoreDetail.correct} = {pointsCorrect}</span>
+                    <span className="text-right">
+                        {matchedUntil} x {scoreDetail.correct} = {pointsCorrect}
+                    </span>
 
                     {!isGameOver && <span>Bonus Waktu</span>}
-                    {!isGameOver && <span className="text-right">{timer} x {scoreDetail.timeBonus} = {pointsTimeBonus}</span>}
+                    {!isGameOver && (
+                        <span className="text-right">
+                            {timer} x {scoreDetail.timeBonus} = {pointsTimeBonus}
+                        </span>
+                    )}
 
                     <span className="font-bold">Total Skor</span>
                     <span className="text-right font-bold">{totalPoints}</span>
@@ -124,15 +134,48 @@ export default function Game() {
             </div>
         );
 
-        setEndGameOverlay({
+        return {
             title,
-            message: overlayMessage
-        });
+            overlayMessage,
+            totalPoints,
+        };
+    }
 
-        setScore(totalPoints);
+    // useCallback biar tidak perlu declare ulang tiap render (untuk dependency useEffect)
+    // fungsi utama endGame
+    const endGame = useCallback(
+        (msg: string) => {
+            setGameActive(false);
 
-        setEndGameCardVisible(true);
-    }, [kataArray, targetNumber, timer, difficulty]);
+            const jawabanUser = kataArray.join(" ").trim();
+            const jawabanBenar = terbilang(Number(targetNumber));
+
+            // Highlight jawaban
+            if (jawabanUser.length > 0) {
+                setHighlightedAnswer(highlightAnswer(jawabanUser, jawabanBenar));
+            } else {
+                setHighlightedAnswer(null);
+            }
+
+            // panggil helper
+            const { title, overlayMessage, totalPoints } = prepareEndGameOverlay({
+                msg,
+                jawabanUser,
+                jawabanBenar,
+                difficulty,
+                timer,
+            });
+
+            setEndGameOverlay({
+                title,
+                message: overlayMessage,
+            });
+
+            setScore(totalPoints);
+            setEndGameCardVisible(true);
+        },
+        [kataArray, targetNumber, timer, difficulty]
+    );
 
 
 
@@ -177,7 +220,18 @@ export default function Game() {
 
     // START GAME
     const startGame = () => {
-        setPreGameOverlayVisible(false); // sembunyikan pre-game overlay
+        setPreGameOverlayVisible(false);
+        setEndGameOverlay(null);
+        setEndGameCardVisible(false);
+
+        // reset state
+        setKataArray([]);
+        setScore(0);
+        setTimer(DEFAULT_TIME);
+        setLives(3);
+        setHighlightedAnswer(null);
+
+        // mulai countdown
         setCountdown(3);
         setCountdownActive(true);
 
@@ -188,17 +242,15 @@ export default function Game() {
                     clearInterval(cid);
                     setCountdown(null);
                     setCountdownActive(false);
-
-                    // Generate angka baru HANYA saat game mulai
-                    updateTargetNumber();
-
-                    setGameActive(true); // game baru mulai setelah countdown
+                    setGameActive(true);
+                    updateTargetNumber(); // generate angka baru
                     return 0;
                 }
                 return prev - 1;
             });
         }, 1000);
     };
+
 
     // MOUNT / QUERY PARAM EFFECT
     useEffect(() => {
@@ -371,7 +423,7 @@ export default function Game() {
                     {formatWithDotsOrPlaceholder(targetNumber).map((d, i) => (
                         <span
                             key={i}
-                            className={`h-8 sm:h-10 md:h-12 lg:h-13 flex items-center justify-center rounded shadow-inner
+                            className={`h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-inner
                                 ${d === "." ? "target-separator" : "target-digit"}`
                             }
                         >
@@ -518,33 +570,7 @@ export default function Game() {
                                 </button>
                                 <button
                                     className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl"
-                                    onClick={() => {
-                                        setEndGameCardVisible(false); // sembunyikan card
-                                        setCountdown(3);
-                                        setCountdownActive(true);
-                                        setEndGameOverlay(null); // reset overlay
-                                        setKataArray([]);
-                                        setScore(0);
-                                        setTimer(DEFAULT_TIME);
-                                        setLives(3);
-                                        setHighlightedAnswer(null);
-
-                                        // start countdown
-                                        const cid = window.setInterval(() => {
-                                            setCountdown(prev => {
-                                                if (prev === null) return prev;
-                                                if (prev <= 1) {
-                                                    clearInterval(cid);
-                                                    setCountdown(null);
-                                                    setCountdownActive(false);
-                                                    setGameActive(true);
-                                                    updateTargetNumber();
-                                                    return 0;
-                                                }
-                                                return prev - 1;
-                                            });
-                                        }, 1000);
-                                    }}
+                                    onClick={startGame}
                                 >
                                     Main Lagi
                                 </button>

@@ -94,6 +94,14 @@
         @apply text-blue-400 lg:w-11 md:w-8 sm:w-7 w-5;
     }
 
+    .target-digit-filled {
+        @apply bg-blue-800 text-white lg:w-11 md:w-8 sm:w-7 w-5 shadow-lg;
+    }
+
+    .target-digit-missed {
+        @apply text-gray-500 lg:w-11 md:w-8 sm:w-7 w-5;
+    }
+
     .target-separator {
         @apply text-gray-600 lg:w-3 sm:w-2 w-1;
     }

@@ -95,3 +95,26 @@ export function generateRandomNumberByDifficulty(difficulty: string): string {
         return digits.join("");
     }
 }
+
+export function findFixedIndices(digits: string[]): number[] {
+    const fixedIndices: number[] = [];
+
+    for (let i = 0; i <= digits.length - 3; i += 3) {
+        if (digits[i] === '0' && digits[i + 1] === '0' && digits[i + 2] === '0') {
+            fixedIndices.push(i, i + 1, i + 2);
+            if (fixedIndices.length >= 6) break; // maksimal 2 tripel
+        }
+    }
+    
+    return fixedIndices;
+}
+
+// Acak urutan array (untuk mode dengan angka acak)
+export function shuffleArray<T>(array: T[]): T[] {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
