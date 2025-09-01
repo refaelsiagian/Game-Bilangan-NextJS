@@ -4,32 +4,36 @@ import { findFixedIndices } from "@/utils/number";
 
 type Props = {
     digits: string[];
-    filledSlots: { [index: number]: string };
-    onSlotClick: (index: number) => void;
     difficulty: "mudah" | "sedang" | "sulit";
     orbitronClass?: string;
     countdownActive?: boolean;
     displayLength?: number;
-    gameEnded?: boolean; // 👈 tambahan
+    // --- TAMBAHAN PROPS BARU ---
+    hintIndices?: number[];
+    revealDigits?: boolean;
 };
 
 export default function NumberSlots({
     digits,
-    filledSlots,
-    onSlotClick,
     difficulty,
     orbitronClass,
     countdownActive = false,
     displayLength = 15,
-    gameEnded = false, // default false
+    // --- PROPS BARU DENGAN DEFAULT KOSONG ---
+    hintIndices = [],
+    revealDigits = false,
 }: Props) {
+    // Memo untuk digit yang sudah terpasang di mode mudah
     const fixedIndices = useMemo(
         () => (difficulty === "mudah" ? findFixedIndices(digits) : []),
         [difficulty, digits]
     );
 
+    // components/NumberSlots.tsx (Pastikan kodenya seperti ini)
     const renderCells = useMemo(() => {
-        //　Jika num belum ada, tampilkan placeholder
+        // Jika num belum ada ATAU countdown aktif, tampilkan placeholder
+        const place = digits.length === 0 || countdownActive;
+        console.log({place});
         if (digits.length === 0 || countdownActive) {
             const placeholder: Array<{ type: "digit" | "sep"; value: string; digitIndex?: number }> = [];
             for (let i = 0; i < displayLength; i++) {
@@ -41,6 +45,7 @@ export default function NumberSlots({
             return placeholder;
         }
 
+        // Jika tidak, render digit angka yang sebenarnya.
         const cells: Array<{ type: "digit" | "sep"; value: string; digitIndex?: number }> = [];
         for (let i = 0; i < digits.length; i++) {
             cells.push({ type: "digit", value: digits[i], digitIndex: i });
@@ -64,27 +69,23 @@ export default function NumberSlots({
                     }
 
                     const idx = cell.digitIndex!;
-                    const isFixed = fixedIndices.includes(idx);
-                    const isFilled = filledSlots[idx] !== undefined;
-                    const isMissed = gameEnded && !isFixed && !isFilled; // 👈 tambahan
+                    // --- LOGIKA UTAMA YANG DIPERBARUI ---
+                    const isFixed = fixedIndices.includes(idx); // Untuk mode 'pilih' mudah
+                    const isHint = hintIndices.includes(idx);   // Untuk mode 'cocok'
+                    const isMissed = revealDigits && !isFixed && !isHint;
+
+                    const shouldBeVisible = isFixed || isHint;
 
                     return (
                         <span
                             key={`d-${idx}`}
-                            data-index={idx}
-                            onClick={() => {
-                                if (isFixed || isFilled || gameEnded) return;
-                                onSlotClick(idx);
-                            }}
-                            className={`h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl
-                                ${isFixed ? "target-digit cursor-default" 
-                                    : isFilled ? "target-digit-filled cursor-default" 
-                                    : isMissed ? "target-digit-missed cursor-default" 
-                                    : "target-digit hover:bg-gray-800 cursor-pointer"}
-                            `}
-                            aria-label={`slot-${idx}`}
+                            className={`h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl 
+                                ${isMissed ? "target-digit-missed cursor-default" : "target-digit cursor-default"}`
+                            }
                         >
-                            {isFixed ? digits[idx] : (isFilled ? filledSlots[idx] : isMissed ? digits[idx] : "_")}
+                            {/* Tampilkan digit jika itu hint, fixed, atau sudah diisi */}
+                            {shouldBeVisible ? digits[idx] :
+                                isMissed ? digits[idx] : "_"}
                         </span>
                     );
                 })}
