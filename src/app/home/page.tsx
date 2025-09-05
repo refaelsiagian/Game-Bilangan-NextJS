@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation"; // 👈 import router
+import { gameData } from "@/config/game.config";
 import Expandable from "@/components/Expandable";
 import Select from "@/components/Select";
 
@@ -14,33 +15,16 @@ export default function MainMenu() {
     const router = useRouter(); // 👈 inisialisasi router
     const [loadingMode, setLoadingMode] = useState<string | null>(null); // mode yang sedang loading
 
-    const modes = {
-        cepat: [
-            { name: "Tulis", desc: "Lorem ipsum dolor sit amet, tulis jawabanmu langsung. Lorem ipsum dolor sit amet, tulis jawabanmu langsung. Lorem ipsum dolor sit amet, tulis jawabanmu langsung." },
-            { name: "Pilih", desc: "Lorem ipsum dolor sit amet, pilih jawaban yang benar." },
-            { name: "Isi", desc: "Lorem ipsum dolor sit amet, isi bagian kosong." },
-        ],
-        banyak: [
-            { name: "Cari", desc: "Lorem ipsum dolor sit amet, cari bilangan yang sesuai." },
-            { name: "Cocok", desc: "Lorem ipsum dolor sit amet, cocokkan bilangan yang benar." },
-            { name: "Kedip", desc: "Lorem ipsum dolor sit amet, perhatikan angka yang berkedip." },
-        ],
-    } as const;
+    const getDifficulty = (modeName: string) => difficulty[modeName] ?? "mudah";
 
-    const difficultyOptions = [
-        { value: "Mudah", name: "Mudah", desc: "Soal dengan bilangan kecil dan operasi sederhana." },
-        { value: "Sedang", name: "Sedang", desc: "Soal dengan bilangan sedang dan operasi sedang." },
-        { value: "Sulit", name: "Sulit", desc: "Soal dengan bilangan besar dan operasi sulit." },
-    ];
+    // ✨ 3. SESUAIKAN handlePlay
+    const handlePlay = (modePath: string, modeName: string) => {
+        setLoadingMode(modeName);
+        const diff = getDifficulty(modeName); // Langsung pakai value dari state (sudah lowercase)
 
-    // Helper untuk dapatkan difficulty untuk mode tertentu (default = "Mudah")
-    const getDifficulty = (modeName: string) => difficulty[modeName] ?? "Mudah";
-
-    const handlePlay = (modeName: string) => {
-        setLoadingMode(modeName); // tombol mode ini jadi loading
         setTimeout(() => {
-            router.push(`/game?mode=${modeName}&diff=${getDifficulty(modeName)}`);
-        }, 800); // kasih delay 800ms biar spinner kelihatan
+            router.push(`/game/${modePath}?diff=${diff}`);
+        }, 800);
     };
 
     return (
@@ -75,9 +59,18 @@ export default function MainMenu() {
                         className="grid gap-4 absolute w-full pb-7"
                     >
                         {/* Map setiap mode */}
-                        {modes[kategori].map((mode) => {
+                        {gameData[kategori].map((mode) => {
                             const isOpen = expanded === mode.name;
                             const isLoading = loadingMode === mode.name;
+
+                            // ✨ BUAT OPSI KESULITAN DI SINI, SPESIFIK UNTUK SETIAP MODE
+                            const difficultyOptionsForThisMode = Object.keys(mode.difficulty).map(key => ({
+                                value: key,
+                                name: key.charAt(0).toUpperCase() + key.slice(1),
+                                // Ambil deskripsi dari 'mode' saat ini, bukan 'sampleMode'
+                                desc: mode.difficulty[key as keyof typeof mode.difficulty].desc,
+                            }));
+
                             return (
                                 <motion.div
                                     layout
@@ -99,14 +92,14 @@ export default function MainMenu() {
                                     {/* Konten yang bisa diperluas */}
                                     <Expandable isOpen={isOpen}>
                                         <div className="mt-4 px-6 pb-10 flex flex-col gap-4">
-                                            <p className="text-gray-600">{mode.desc}</p>
+                                            <p className="text-gray-600">{mode.simpleDesc}</p>
 
                                             <div className="mt-auto flex justify-between items-end">
                                                 {/* Select kesulitan (per-mode) */}
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Kesulitan</label>
                                                     <Select
-                                                        options={difficultyOptions}
+                                                        options={difficultyOptionsForThisMode}
                                                         value={getDifficulty(mode.name)}
                                                         onChange={(val) =>
                                                             setDifficulty((prev) => ({ ...prev, [mode.name]: val }))
@@ -116,7 +109,7 @@ export default function MainMenu() {
 
                                                 {/* Tombol main */}
                                                 <button
-                                                    onClick={() => handlePlay(mode.name)}
+                                                    onClick={() => handlePlay(mode.path, mode.name)}
                                                     disabled={isLoading}
                                                     className="px-10 py-2 bg-theme-purple-850 text-white rounded-lg shadow hover:bg-theme-purple-900 transition flex items-center justify-center"
                                                 >

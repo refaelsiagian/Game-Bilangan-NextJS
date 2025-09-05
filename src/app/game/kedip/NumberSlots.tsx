@@ -14,13 +14,11 @@ type Props = {
 
 export default function NumberSlots({
     digits,
-    orbitronClass,
     difficulty, // Tidak perlu jika tidak digunakan di sini
     countdownActive = false,
     activeIndices = [],
     revealDigits = false,
 }: Props) {
-
 
     const fixedIndices = useMemo(
         () => (difficulty === "mudah" ? findFixedIndices(digits) : []),
@@ -44,7 +42,7 @@ export default function NumberSlots({
 
     return (
         <div className="text-center mb-4 relative z-10">
-            <div className={`${orbitronClass ?? ""} font-orbitron target-number-box`}>
+            <div className={`font-orbitron target-number-box`}>
                 {renderCells.map((cell, viewIndex) => {
                     if (cell.type === "sep") {
                         return (

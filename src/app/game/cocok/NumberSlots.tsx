@@ -5,7 +5,6 @@ import { findFixedIndices } from "@/utils/number";
 type Props = {
     digits: string[];
     difficulty: "mudah" | "sedang" | "sulit";
-    orbitronClass?: string;
     countdownActive?: boolean;
     displayLength?: number;
     // --- TAMBAHAN PROPS BARU ---
@@ -16,7 +15,6 @@ type Props = {
 export default function NumberSlots({
     digits,
     difficulty,
-    orbitronClass,
     countdownActive = false,
     displayLength = 15,
     // --- PROPS BARU DENGAN DEFAULT KOSONG ---
@@ -58,7 +56,7 @@ export default function NumberSlots({
 
     return (
         <div className="text-center mb-4 relative z-10">
-            <div className={`${orbitronClass ?? ""} font-orbitron target-number-box`}>
+            <div className={`font-orbitron target-number-box`}>
                 {renderCells.map((cell, viewIndex) => {
                     if (cell.type === "sep") {
                         return (

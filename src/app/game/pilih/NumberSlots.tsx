@@ -7,7 +7,6 @@ type Props = {
     filledSlots: { [index: number]: string };
     onSlotClick: (index: number) => void;
     difficulty: "mudah" | "sedang" | "sulit";
-    orbitronClass?: string;
     countdownActive?: boolean;
     displayLength?: number;
     gameEnded?: boolean; // 👈 tambahan
@@ -18,7 +17,6 @@ export default function NumberSlots({
     filledSlots,
     onSlotClick,
     difficulty,
-    orbitronClass,
     countdownActive = false,
     displayLength = 15,
     gameEnded = false, // default false
@@ -53,7 +51,7 @@ export default function NumberSlots({
 
     return (
         <div className="text-center mb-4 relative z-10">
-            <div className={`${orbitronClass ?? ""} font-orbitron target-number-box`}>
+            <div className={`font-orbitron target-number-box`}>
                 {renderCells.map((cell, viewIndex) => {
                     if (cell.type === "sep") {
                         return (
