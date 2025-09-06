@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import React from "react"; // Impor React untuk Fragment
 
 type Props = {
     targetNumber: string;
@@ -7,30 +7,29 @@ type Props = {
 };
 
 export default function NumberSlots({ targetNumber, isCountdown }: Props) {
-    const renderCells = useMemo(() => {
-        const displayLength = 15; // Selalu tampilkan 15 slot
-        if (!targetNumber || isCountdown) {
-            return Array(displayLength).fill("_");
-        }
-        return targetNumber.split('');
-    }, [targetNumber, isCountdown]); // BENAR: Tambahkan dependensi
+    const displayLength = 15;
 
-    const cellsWithSeparators = [];
-    for (let i = 0; i < renderCells.length; i++) {
-        cellsWithSeparators.push(
-            <span key={`d-${i}`} className="target-digit">{renderCells[i]}</span>
-        );
-        if ((i + 1) % 3 === 0 && i < renderCells.length - 1) {
-            cellsWithSeparators.push(
-                <span key={`s-${i}`} className="target-separator">.</span>
-            );
-        }
-    }
+    // Tentukan sel yang akan dirender: placeholder atau digit asli
+    const cellsToRender = (!targetNumber || isCountdown)
+        ? Array(displayLength).fill("_")
+        : targetNumber.split('');
 
     return (
-        <div className="text-center mb-4">
-            <div className="target-number-box font-orbitron">
-                {cellsWithSeparators}
+        <div className="text-center mb-4 relative z-10">
+            <div className="font-orbitron target-number-box">
+                {cellsToRender.map((cellContent, index) => (
+                    // Gunakan React.Fragment agar key bisa diterapkan pada grup elemen
+                    <React.Fragment key={`cell-group-${index}`}>
+                        <span className="h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl target-digit">
+                            {cellContent}
+                        </span>
+
+                        {/* Render separator secara kondisional di dalam loop */}
+                        {((index + 1) % 3 === 0 && index < cellsToRender.length - 1) && (
+                            <span className="target-separator">.</span>
+                        )}
+                    </React.Fragment>
+                ))}
             </div>
         </div>
     );

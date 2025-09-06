@@ -254,7 +254,7 @@ export default function Kedip() {
         <main className="container mx-auto py-6 relative">
             <NumberSlots
                 digits={targetNumber ? targetNumber.split('') : []}
-                difficulty={difficulty}
+                fixedIndices={fixedIndices}
                 activeIndices={blinkPositions}
                 revealDigits={isAnsweredInRound}
                 countdownActive={isCountdown}

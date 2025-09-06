@@ -134,6 +134,7 @@ export default function Cocokk() {
         }
         setTargetNumber(num);
         setOptions(shuffleArray(currentOptions));
+        setHintIndices([...currentHintPositions, ...fixedIndices]);
         setCorrectAnswer(correctAnswerText);
     }, [difficulty, createWrongOption]);
 
@@ -239,8 +240,6 @@ export default function Cocokk() {
         <main className="container mx-auto py-6 relative">
             <NumberSlots
                 digits={targetNumber ? targetNumber.split('') : []}
-                difficulty={difficulty}
-                displayLength={15}
                 hintIndices={hintIndices}
                 revealDigits={revealDigits}
                 countdownActive={isCountdown}

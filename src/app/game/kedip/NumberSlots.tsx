@@ -1,72 +1,71 @@
-// components/NumberSlots.tsx
-import React, { useMemo } from "react";
-import { findFixedIndices } from "@/utils/number"; // findFixedIndices tidak perlu lagi di sini jika sudah diurus di parent
+// app/game/_components/NumberSlotsKedip.tsx
+
+import React from "react";
 
 type Props = {
     digits: string[];
-    orbitronClass?: string;
+    activeIndices?: number[]; // Indeks digit yang harus terlihat (blink)
+    fixedIndices?: number[];  // Indeks digit yang terlihat permanen (mode mudah)
+    revealDigits?: boolean;   // Untuk mengungkap semua digit di akhir
     countdownActive?: boolean;
-    difficulty?: "mudah" | "sedang" | "sulit"; // Tidak perlu jika tidak digunakan di sini
-    // --- UBAH PROPS INI AGAR LEBIH UMUM ---
-    activeIndices?: number[]; // Indeks digit yang harus terlihat (baik fixed maupun blink)
-    revealDigits?: boolean; // Untuk mengungkap semua digit di akhir
 };
 
 export default function NumberSlots({
     digits,
-    difficulty, // Tidak perlu jika tidak digunakan di sini
-    countdownActive = false,
     activeIndices = [],
+    fixedIndices = [],
     revealDigits = false,
+    countdownActive = false,
 }: Props) {
+    const displayLength = 15;
 
-    const fixedIndices = useMemo(
-        () => (difficulty === "mudah" ? findFixedIndices(digits) : []),
-        [difficulty, digits]
-    );
+    // Handle kondisi placeholder untuk kebersihan kode
+    if (digits.length === 0 || countdownActive) {
+        const placeholders = Array.from({ length: displayLength });
+        return (
+            <div className="text-center mb-4 relative z-10">
+                <div className="font-orbitron target-number-box">
+                    {placeholders.map((_, index) => (
+                        <React.Fragment key={`ph-group-${index}`}>
+                            <span className="h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl target-digit">_</span>
+                            {((index + 1) % 3 === 0 && index < displayLength - 1) && (
+                                <span className="target-separator">.</span>
+                            )}
+                        </React.Fragment>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
-    const renderCells = useMemo(() => {
-        const placeholderLength = 15; // Sesuaikan dengan panjang maksimal angka
-        const cells: Array<{ type: "digit" | "sep"; value: string; digitIndex?: number }> = [];
-
-        const effectiveDigits = (digits.length === 0 || countdownActive) ? Array(placeholderLength).fill("_") : digits;
-
-        for (let i = 0; i < effectiveDigits.length; i++) {
-            cells.push({ type: "digit", value: effectiveDigits[i], digitIndex: i });
-            if ((i + 1) % 3 === 0 && i !== effectiveDigits.length - 1) {
-                cells.push({ type: "sep", value: "." });
-            }
-        }
-        return cells;
-    }, [digits, countdownActive]);
-
+    // Render utama saat game berjalan
     return (
         <div className="text-center mb-4 relative z-10">
-            <div className={`font-orbitron target-number-box`}>
-                {renderCells.map((cell, viewIndex) => {
-                    if (cell.type === "sep") {
-                        return (
-                            <span key={`sep-${viewIndex}`} className="h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl target-separator">
-                                {cell.value}
-                            </span>
-                        );
-                    }
+            <div className="font-orbitron target-number-box">
+                {digits.map((digit, index) => {
+                    // Logika unik dari mode "Kedip" tetap dipertahankan di sini
+                    const isBlinking = activeIndices.includes(index);
+                    const isFixed = fixedIndices.includes(index);
+                    const shouldBeVisible = isBlinking || isFixed || revealDigits;
 
-                    const idx = cell.digitIndex!;
-                    const isActive = activeIndices.includes(idx);
-                    const isFixed = fixedIndices.includes(idx);
-                    // Digit harus terlihat jika aktif (blink) atau tetap (fixed)
-                    const shouldBeVisible = isActive || isFixed || revealDigits;
+                    // Berikan style khusus untuk digit yang berkedip
+                    const digitClass = isBlinking 
+                        ? "target-digit" // Class untuk membuatnya bersinar/berkedip
+                        : "target-digit";
 
                     return (
-                        <span
-                            key={`d-${idx}`}
-                            className={`h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl 
-                            target-digit transition-colors duration-300`}
-                        >
-                            {/* Tampilkan digit jika aktif atau saat diungkap */}
-                            {shouldBeVisible ? digits[idx] : "_"}
-                        </span>
+                        <React.Fragment key={`cell-group-${index}`}>
+                            <span
+                                className={`h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl 
+                                    transition-colors duration-200 ${digitClass}`}
+                            >
+                                {shouldBeVisible ? digit : "_"}
+                            </span>
+
+                            {((index + 1) % 3 === 0 && index < digits.length - 1) && (
+                                <span className="target-separator">.</span>
+                            )}
+                        </React.Fragment>
                     );
                 })}
             </div>

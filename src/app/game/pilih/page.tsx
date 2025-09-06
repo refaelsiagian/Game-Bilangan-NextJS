@@ -190,7 +190,7 @@ export default function GamePilih() {
                 digits={targetDigits}
                 filledSlots={filledSlots}
                 onSlotClick={handleSlotClick}
-                difficulty={difficulty}
+                fixedIndices={findFixedIndices(targetDigits)}
                 countdownActive={isCountdown}
                 displayLength={15}
                 gameEnded={isGameFinished}

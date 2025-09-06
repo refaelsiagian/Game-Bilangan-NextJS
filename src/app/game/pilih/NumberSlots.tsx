@@ -1,91 +1,83 @@
-// components/NumberSlots.tsx
-import React, { useMemo } from "react";
-import { findFixedIndices } from "@/utils/number";
+// app/game/_components/NumberSlotsPilih.tsx
 
+import React from "react";
+
+// Props tidak berubah
 type Props = {
     digits: string[];
     filledSlots: { [index: number]: string };
     onSlotClick: (index: number) => void;
-    difficulty: "mudah" | "sedang" | "sulit";
+    fixedIndices: number[];
     countdownActive?: boolean;
     displayLength?: number;
-    gameEnded?: boolean; // 👈 tambahan
+    gameEnded?: boolean;
 };
 
 export default function NumberSlots({
     digits,
     filledSlots,
     onSlotClick,
-    difficulty,
+    fixedIndices,
     countdownActive = false,
     displayLength = 15,
-    gameEnded = false, // default false
+    gameEnded = false,
 }: Props) {
-    const fixedIndices = useMemo(
-        () => (difficulty === "mudah" ? findFixedIndices(digits) : []),
-        [difficulty, digits]
-    );
-
-    const renderCells = useMemo(() => {
-        //　Jika num belum ada, tampilkan placeholder
-        if (digits.length === 0 || countdownActive) {
-            const placeholder: Array<{ type: "digit" | "sep"; value: string; digitIndex?: number }> = [];
-            for (let i = 0; i < displayLength; i++) {
-                placeholder.push({ type: "digit", value: "_", digitIndex: i });
-                if ((i + 1) % 3 === 0 && i !== displayLength - 1) {
-                    placeholder.push({ type: "sep", value: "." });
-                }
-            }
-            return placeholder;
-        }
-
-        const cells: Array<{ type: "digit" | "sep"; value: string; digitIndex?: number }> = [];
-        for (let i = 0; i < digits.length; i++) {
-            cells.push({ type: "digit", value: digits[i], digitIndex: i });
-            if ((i + 1) % 3 === 0 && i !== digits.length - 1) {
-                cells.push({ type: "sep", value: "." });
-            }
-        }
-        return cells;
-    }, [digits, countdownActive, displayLength]);
 
     return (
         <div className="text-center mb-4 relative z-10">
-            <div className={`font-orbitron target-number-box`}>
-                {renderCells.map((cell, viewIndex) => {
-                    if (cell.type === "sep") {
+            <div className="font-orbitron target-number-box">
+                {/* Logika render sekarang ada di sini */}
+                {(digits.length === 0 || countdownActive)
+                    // Jika countdown atau data belum siap, render placeholder
+                    ? Array.from({ length: displayLength }).map((_, index) => (
+                        <React.Fragment key={`ph-${index}`}>
+                            <span className="h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl target-digit">_</span>
+                            {((index + 1) % 3 === 0 && index < displayLength - 1) && (
+                                <span className="target-separator">.</span>
+                            )}
+                        </React.Fragment>
+                    ))
+                    // Jika game berjalan, render digit asli
+                    : digits.map((digit, index) => {
+                        // Semua logika unik dari mode "Pilih" tetap dipertahankan di sini
+                        const isFixed = fixedIndices.includes(index);
+                        const isFilled = filledSlots[index] !== undefined;
+                        const isMissed = gameEnded && !isFixed && !isFilled;
+
+                        const slotClass = isFixed
+                            ? "target-digit cursor-default"
+                            : isFilled
+                                ? "target-digit-filled cursor-default"
+                                : isMissed
+                                    ? "target-digit-missed cursor-default"
+                                    : "target-digit hover:bg-gray-800 cursor-pointer";
+
+                        const content = isFixed
+                            ? digits[index]
+                            : isFilled
+                                ? filledSlots[index]
+                                : isMissed
+                                    ? digits[index]
+                                    : "_";
+
                         return (
-                            <span key={`sep-${viewIndex}`} className="h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl target-separator">
-                                {cell.value}
-                            </span>
+                            <React.Fragment key={`cell-${index}`}>
+                                <span
+                                    onClick={() => {
+                                        if (isFixed || isFilled || gameEnded) return;
+                                        onSlotClick(index);
+                                    }}
+                                    className={`h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl ${slotClass}`}
+                                    aria-label={`slot-${index}`}
+                                >
+                                    {content}
+                                </span>
+                                {((index + 1) % 3 === 0 && index < digits.length - 1) && (
+                                    <span className="target-separator">.</span>
+                                )}
+                            </React.Fragment>
                         );
-                    }
-
-                    const idx = cell.digitIndex!;
-                    const isFixed = fixedIndices.includes(idx);
-                    const isFilled = filledSlots[idx] !== undefined;
-                    const isMissed = gameEnded && !isFixed && !isFilled; // 👈 tambahan
-
-                    return (
-                        <span
-                            key={`d-${idx}`}
-                            data-index={idx}
-                            onClick={() => {
-                                if (isFixed || isFilled || gameEnded) return;
-                                onSlotClick(idx);
-                            }}
-                            className={`h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl
-                                ${isFixed ? "target-digit cursor-default" 
-                                    : isFilled ? "target-digit-filled cursor-default" 
-                                    : isMissed ? "target-digit-missed cursor-default" 
-                                    : "target-digit hover:bg-gray-800 cursor-pointer"}
-                            `}
-                            aria-label={`slot-${idx}`}
-                        >
-                            {isFixed ? digits[idx] : (isFilled ? filledSlots[idx] : isMissed ? digits[idx] : "_")}
-                        </span>
-                    );
-                })}
+                    })}
             </div>
         </div>
     );
