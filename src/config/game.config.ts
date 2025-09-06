@@ -69,6 +69,29 @@ export const gameData = {
                 },
             },
         },
+        {
+            name: "Isi",
+            path: "isi",
+            simpleDesc: "Isi digit yang disorot dengan angka yang benar.",
+            desc: [
+                "Terdapat 15 slot kosong menggambarkan 15 digit angka. Satu digit angka akan disorot secara acak.",
+                "Isi slot tersebut dengan angka yang benar berdasarkan terbilang yang diberikan.",
+            ],
+            difficulty: {
+                mudah: {
+                    desc: "6 digit dari keseluruhan angka sudah terisi.",
+                    score: { completed: 100, correct: 5, timeBonus: 1 },
+                },
+                sedang: {
+                    desc: "Tidak ada digit yang terisi.",
+                    score: { completed: 200, correct: 10, timeBonus: 2 },
+                },
+                sulit: {
+                    desc: "Digit sorotan akan langsung berpindah jika salah.",
+                    score: { completed: 300, correct: 15, timeBonus: 3 },
+                },
+            },
+        },
         // ... mode lain di kategori "cepat"
     ],
     banyak: [
