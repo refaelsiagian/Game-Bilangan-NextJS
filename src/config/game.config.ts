@@ -73,6 +73,29 @@ export const gameData = {
     ],
     banyak: [
         {
+            name: "Cari",
+            path: "cari",
+            simpleDesc: "Cari digit yang salah.",
+            desc: [
+                "Beberapa digit yang tampil tidak sama dengan terbilang yang diberikan.",
+                "Carilah digit-digit tersebut lalu periksa."
+            ],
+            difficulty: {
+                mudah: {
+                    desc: "Enam digit adalah 0 dan sama sekali tidak salah.",
+                    score: { correct: 15 },
+                },
+                sedang: {
+                    desc: "1-5 digit adalah salah.",
+                    score: { correct: 25 },
+                },
+                sulit: {
+                    desc: "Bilangan dengan 0 tersebar.",
+                    score: { correct: 35 },
+                },
+            },
+        },
+        {
             name: "Cocok",
             path: "cocok",
             simpleDesc: "Tebak bilangan dari petunjuk beberapa digit yang tampil.",
