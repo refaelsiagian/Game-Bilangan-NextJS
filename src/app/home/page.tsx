@@ -22,9 +22,9 @@ export default function MainMenu() {
         setLoadingMode(modeName);
         const diff = getDifficulty(modeName); // Langsung pakai value dari state (sudah lowercase)
 
-        setTimeout(() => {
-            router.push(`/game/${modePath}?diff=${diff}`);
-        }, 800);
+        router.push(`/game/${modePath}?diff=${diff}`);
+        // setTimeout(() => {
+        // }, 800);
     };
 
     return (

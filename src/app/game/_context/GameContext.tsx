@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useState, useContext, ReactNode, useEffect, useRef, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 import PreGameOverlay from "@/app/game/_components/PreGameOverlay";
 import CountdownOverlay from "@/app/game/_components/CountdownOverlay";
@@ -25,14 +25,19 @@ interface GameContextType {
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-export function GameProvider({ children }: { children: ReactNode }) {
+export function GameProvider({ 
+    children,
+    initialDifficulty 
+}: { 
+    children: ReactNode,
+    initialDifficulty: "mudah" | "sedang" | "sulit"
+}) {
     const router = useRouter();
-    const searchParams = useSearchParams();
 
     const [score, setScore] = useState(0);
     const [lives, setLives] = useState(3);
     const [timer, setTimer] = useState(120);
-    const [difficulty, setDifficulty] = useState<"mudah" | "sedang" | "sulit">("sedang");
+    const [difficulty, setDifficulty] = useState<"mudah" | "sedang" | "sulit">(initialDifficulty);
     const [gameActive, setGameActive] = useState(false);
     const [isPreGame, setIsPreGame] = useState(true);
     const [isCountdown, setIsCountdown] = useState(false);
@@ -44,13 +49,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const [onTimeUpCallback, setOnTimeUpCallback] = useState<(() => void) | null>(null);
 
     const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-    useEffect(() => {
-        const diffParam = searchParams.get("diff") as "mudah" | "sedang" | "sulit";
-        if (diffParam && ["mudah", "sedang", "sulit"].includes(diffParam)) {
-            setDifficulty(diffParam);
-        }
-    }, [searchParams]);
 
     const endGame = useCallback((result: { title: string; message: ReactNode }) => {
         setGameActive(false);
