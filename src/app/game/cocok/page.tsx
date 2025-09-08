@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { useGame } from "@/app/game/_context/GameContext"; // 👈 Impor useGame
-import { gameData } from "@/config/game.config"; // 👈 Impor gameData
+import { useGame } from "@/app/game/_context/GameContext";
+import { gameData } from "@/config/game.config";
 import {
     terbilang,
     generateRandomNumberByDifficulty,
@@ -10,28 +10,25 @@ import {
 } from "@/utils/number";
 import NumberSlots from "./NumberSlots";
 
-export default function Cocokk() {
-    // 1. Ambil state dan fungsi dari context
-    const { addScore, loseLife, endGame, gameActive, difficulty, timer, isCountdown, lives } = useGame();
+export default function Cocok() {
+    // ✨ 1. Ambil 'setOnTimeUpCallback' dari context
+    const { addScore, loseLife, endGame, gameActive, difficulty, isCountdown, lives, setOnTimeUpCallback } = useGame();
 
-    // Ambil konfigurasi spesifik untuk mode 'cocok'
     const gameModeConfig = gameData.banyak.find(m => m.path === 'cocok');
     if (!gameModeConfig) {
         throw new Error("Konfigurasi untuk mode game 'cocok' tidak ditemukan.");
     }
 
-    // State yang tersisa adalah yang SPESIFIK untuk gameplay "Cocok"
+    // State lokal tidak berubah
     const [targetNumber, setTargetNumber] = useState('');
     const [options, setOptions] = useState<string[]>([]);
     const [correctAnswer, setCorrectAnswer] = useState('');
     const [feedback, setFeedback] = useState<{ [key: string]: 'correct' | 'wrong' }>({});
     const [answered, setAnswered] = useState(false);
     const [isGameFinished, setIsGameFinished] = useState(false);
-    const [correctRounds, setCorrectRounds] = useState(0); // Untuk rekap skor akhir
+    const [correctRounds, setCorrectRounds] = useState(0);
     const [hintIndices, setHintIndices] = useState<number[]>([]);
     const [revealDigits, setRevealDigits] = useState<boolean>(false);
-
-
 
     // ... (createWrongOption dan helper-nya tidak perlu diubah) ...
     const createWrongOption = useCallback((
@@ -138,44 +135,62 @@ export default function Cocokk() {
         setCorrectAnswer(correctAnswerText);
     }, [difficulty, createWrongOption]);
 
-    // Fungsi baru untuk menangani akhir game
+    // ✨ 2. Pindahkan logika skor akhir ke handleEndGame
     const handleEndGame = useCallback((title: string, message: string) => {
         if (isGameFinished) return;
         setIsGameFinished(true);
 
         const scoreDetail = gameModeConfig.difficulty[difficulty].score;
+        const totalScore = correctRounds * scoreDetail.correct;
 
         const overlayMessage = (
             <div className="text-left space-y-1">
                 <p>{message}</p><hr className="my-2" />
                 <div className="grid grid-cols-2 gap-x-4 text-sm sm:text-base">
                     <span>Jawaban Benar</span>
-                    <span className="text-right">{correctRounds} x {scoreDetail.correct} = {correctRounds * scoreDetail.correct}</span>
+                    <span className="text-right">{correctRounds} x {scoreDetail.correct} = {totalScore}</span>
                     <span className="font-bold">Total Skor</span>
-                    <span className="text-right font-bold">{correctRounds * scoreDetail.correct}</span>
+                    <span className="text-right font-bold">{totalScore}</span>
                 </div>
-
             </div>
         );
 
         endGame({ title, message: overlayMessage });
     }, [isGameFinished, gameModeConfig, difficulty, correctRounds, endGame]);
 
+    // ✨ 3. Buat "surat instruksi" untuk Boss jika waktu habis
+    const handleTimeUp = useCallback(() => {
+        handleEndGame("Waktu Habis!", "Waktu Anda telah habis.");
+    }, [handleEndGame]);
+
+    // ✨ 4. Terapkan pola "Amplop": Daftarkan instruksi ke Boss
+    useEffect(() => {
+        setOnTimeUpCallback(() => handleTimeUp);
+        return () => {
+            setOnTimeUpCallback(null);
+        };
+    }, [setOnTimeUpCallback, handleTimeUp]);
+
+    // ✨ 5. Terapkan pola Reaktif: Awasi nyawa
+    useEffect(() => {
+        if (lives <= 0 && gameActive) {
+            handleEndGame("Game Over", "Nyawa Anda habis.");
+        }
+    }, [lives, gameActive, handleEndGame]);
+
+
     const handleOptionClick = (selectedOption: string) => {
         if (!gameActive || answered || isGameFinished) return;
 
-        // 1. Langsung set state untuk feedback visual instan
         setAnswered(true);
         setRevealDigits(true);
         const isCorrect = selectedOption === correctAnswer;
-        const scoreDetail = gameModeConfig.difficulty[difficulty].score;
 
         if (isCorrect) {
             setFeedback({ [selectedOption]: 'correct' });
-            addScore(scoreDetail.correct);
+            addScore(gameModeConfig.difficulty[difficulty].score.correct);
             setCorrectRounds(prev => prev + 1);
 
-            // Atur timeout untuk ronde berikutnya
             setTimeout(() => {
                 if (gameActive && !isGameFinished) {
                     setupNewRound();
@@ -189,27 +204,19 @@ export default function Cocokk() {
                 [correctAnswer]: 'correct'
             });
 
-            // 2. Cek apakah ini nyawa terakhir
-            const isLastLife = lives <= 1;
-
-            // Panggil loseLife untuk update state di context
-            loseLife({ onGameOver: () => { } }); // Callback dikosongkan karena kita tangani di sini
-
-            // 3. Gunakan timeout untuk menunda aksi berikutnya (selalu)
-            // Ini memastikan feedback visual selalu tampil selama 1.2 detik
+            // ✨ 6. Panggil loseLife versi sederhana dan biarkan useEffect yang menanganinya
+            loseLife();
+            
+            // Atur timeout untuk ronde berikutnya jika nyawa masih ada
             setTimeout(() => {
-                if (isLastLife) {
-                    // Jika ini nyawa terakhir, panggil endGame SETELAH jeda
-                    handleEndGame("Game Over", "Nyawa Anda habis.");
-                } else if (gameActive && !isGameFinished) {
-                    // Jika bukan, mulai ronde baru SETELAH jeda
+                if (gameActive && !isGameFinished && lives > 1) { // Cek lives > 1 karena update state async
                     setupNewRound();
                 }
             }, 1200);
         }
     };
-
-    // 3. Gunakan useEffect untuk bereaksi pada perubahan context
+    
+    // useEffect lainnya tetap sama
     useEffect(() => {
         if (gameActive) {
             setIsGameFinished(false);
@@ -219,14 +226,7 @@ export default function Cocokk() {
     }, [gameActive, setupNewRound]);
 
     useEffect(() => {
-        if (timer <= 0 && gameActive && !isGameFinished) {
-            handleEndGame("Waktu Habis!", "Waktu Anda telah habis.");
-        }
-    }, [timer, gameActive, isGameFinished, handleEndGame]);
-
-    useEffect(() => {
         if (isCountdown) {
-            // Bersihkan papan untuk "Main Lagi"
             setTargetNumber('');
             setOptions([]);
             setHintIndices([]);
@@ -235,34 +235,41 @@ export default function Cocokk() {
         }
     }, [isCountdown]);
 
-    // 4. Hapus semua JSX untuk overlay, render hanya gameplay
+    // ✨ 7. HAPUS useEffect yang lama untuk timer
+    // useEffect(() => {
+    //     if (timer <= 0 && gameActive && !isGameFinished) {
+    //         handleEndGame("Waktu Habis!", "Waktu Anda telah habis.");
+    //     }
+    // }, [timer, gameActive, isGameFinished, handleEndGame]);
+
+    // ... sisa kode JSX untuk render tidak berubah ...
     return (
-        <main className="container mx-auto py-6 relative">
-            <NumberSlots
-                digits={targetNumber ? targetNumber.split('') : []}
-                hintIndices={hintIndices}
-                revealDigits={revealDigits}
-                countdownActive={isCountdown}
-            />
-            <div className="lg:max-w-3xl md:max-w-2xl sm:max-w-lg max-w-sm mx-auto mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {options.map((option, index) => {
-                    const feedbackClass = feedback[option] === 'correct'
-                        ? 'bg-green-500 hover:bg-green-600 border-green-500 text-white'
-                        : feedback[option] === 'wrong'
-                            ? 'bg-red-500 hover:bg-red-600 border-red-500 text-white'
-                            : 'bg-white hover:bg-blue-50 border-gray-300';
-                    return (
-                        <button
-                            key={index}
-                            onClick={() => handleOptionClick(option)}
-                            disabled={answered || isGameFinished}
-                            className={`p-4 rounded-xl shadow-md text-center transition-all duration-300 text-sm md:text-base font-semibold border-2 ${feedbackClass} ${answered || isGameFinished ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                        >
-                            {option}
-                        </button>
-                    );
-                })}
-            </div>
-        </main>
-    );
+     <main className="container mx-auto py-6 relative">
+         <NumberSlots
+             digits={targetNumber ? targetNumber.split('') : []}
+             hintIndices={hintIndices}
+             revealDigits={revealDigits}
+             countdownActive={isCountdown}
+         />
+         <div className="lg:max-w-3xl md:max-w-2xl sm:max-w-lg max-w-sm mx-auto mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+             {options.map((option, index) => {
+                 const feedbackClass = feedback[option] === 'correct'
+                     ? 'bg-green-500 hover:bg-green-600 border-green-500 text-white'
+                     : feedback[option] === 'wrong'
+                         ? 'bg-red-500 hover:bg-red-600 border-red-500 text-white'
+                         : 'bg-white hover:bg-blue-50 border-gray-300';
+                 return (
+                     <button
+                         key={index}
+                         onClick={() => handleOptionClick(option)}
+                         disabled={answered || isGameFinished}
+                         className={`p-4 rounded-xl shadow-md text-center transition-all duration-300 text-sm md:text-base font-semibold border-2 ${feedbackClass} ${answered || isGameFinished ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                     >
+                         {option}
+                     </button>
+                 );
+             })}
+         </div>
+     </main>
+ );
 }

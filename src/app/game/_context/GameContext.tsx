@@ -1,15 +1,13 @@
 "use client";
 
-// 1. Hapus impor yang tidak terpakai (`usePathname`, `gameData`)
 import { createContext, useState, useContext, ReactNode, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-// Impor komponen-komponen UI
 import PreGameOverlay from "@/app/game/_components/PreGameOverlay";
 import CountdownOverlay from "@/app/game/_components/CountdownOverlay";
 import EndGameOverlay from "@/app/game/_components/EndGameOverlay";
 
-// ... Interface GameContextType (tetap sama) ...
+// ✨ LANGKAH 1: Tambahkan "kotak surat" ke dalam "kontrak" (interface)
 interface GameContextType {
     score: number;
     lives: number;
@@ -19,18 +17,18 @@ interface GameContextType {
     isPreGame: boolean;
     isCountdown: boolean;
     addScore: (amount: number) => void;
-    loseLife: (options: { onGameOver: () => void }) => void;
+    loseLife: () => void;
     endGame: (result: { title: string; message: ReactNode }) => void;
+    // Ini adalah "kotak surat" kita. Karyawan bisa memasukkan surat (fungsi) ke sini.
+    setOnTimeUpCallback: (callback: (() => void) | null) => void;
 }
-
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export function GameProvider({ children }: { children: ReactNode }) {
     const router = useRouter();
     const searchParams = useSearchParams();
-    
-    // State yang benar-benar digunakan di sini
+
     const [score, setScore] = useState(0);
     const [lives, setLives] = useState(3);
     const [timer, setTimer] = useState(120);
@@ -42,37 +40,46 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const [endGameInfo, setEndGameInfo] = useState<{ title: string; message: ReactNode } | null>(null);
     const [isEndGameCardVisible, setIsEndGameCardVisible] = useState(true);
 
+    // ✨ LANGKAH 2: Buat "amplop" untuk menyimpan surat dari Karyawan
+    const [onTimeUpCallback, setOnTimeUpCallback] = useState<(() => void) | null>(null);
+
     const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-    
+
     useEffect(() => {
         const diffParam = searchParams.get("diff") as "mudah" | "sedang" | "sulit";
         if (diffParam && ["mudah", "sedang", "sulit"].includes(diffParam)) {
-            setDifficulty(diffParam); // `setDifficulty` digunakan di sini
+            setDifficulty(diffParam);
         }
     }, [searchParams]);
 
-    // `endGame` sekarang akan ditambahkan ke dependency array
     const endGame = useCallback((result: { title: string; message: ReactNode }) => {
         setGameActive(false);
         setEndGameInfo(result);
         setIsEndGameCardVisible(true);
     }, []);
 
+    // ✨ LANGKAH 3: Modifikasi tugas Boss. Sekarang dia akan memeriksa "amplop".
     useEffect(() => {
-        if (gameActive && timer > 0) { // Pastikan timer hanya berjalan jika > 0
+        if (gameActive && timer > 0) {
             timerIntervalRef.current = setInterval(() => {
-                setTimer(prev => prev - 1); // Hanya mengurangi timer
+                setTimer(prev => prev - 1);
             }, 1000);
         } else if (timer <= 0 && gameActive) {
-            // Jika timer habis, gameActive masih true, biarkan halaman mode yang menanganinya
-            // Kita tidak memanggil endGame di sini lagi
+            // Waktu habis! Cek apakah ada surat di amplop.
+            if (onTimeUpCallback) {
+                onTimeUpCallback(); // Jika ada, jalankan instruksi dari surat itu.
+            } else {
+                // Jika amplop kosong (untuk jaga-jaga), jalankan instruksi default.
+                console.warn("Waktu habis, tetapi tidak ada instruksi khusus dari mode game.");
+                endGame({ title: "Waktu Habis", message: "Waktu Anda telah habis." });
+            }
         }
 
-        // Cleanup function tetap sama
         return () => {
             if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
         };
-    }, [gameActive, timer]); // Timer sekarang menjadi dependensi
+        // Tambahkan onTimeUpCallback dan endGame ke dependensi
+    }, [gameActive, timer, onTimeUpCallback, endGame]);
 
     const startGame = useCallback(() => {
         setGameActive(false);
@@ -85,10 +92,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setIsCountdown(true);
         setCountdown(3);
         const countdownInterval = setInterval(() => {
-            setCountdown(prev => { // `setCountdown` digunakan di sini
+            setCountdown(prev => {
                 if (prev <= 1) {
                     clearInterval(countdownInterval);
-                    setIsCountdown(false); // `setIsCountdown` digunakan di sini
+                    setIsCountdown(false);
                     setGameActive(true);
                     return 0;
                 }
@@ -97,28 +104,27 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }, 1000);
     }, []);
 
-    // 3. Gunakan parameter di dalam fungsi
-    const loseLife = useCallback((options: { onGameOver: () => void }) => {
-        setLives(prevLives => { // `setLives` digunakan di sini
-            const newLives = prevLives - 1;
-            if (newLives <= 0) {
-                options.onGameOver(); // `options` digunakan di sini
-            }
-            return newLives;
+    const loseLife = useCallback(() => {
+        setLives(prevLives => {
+            // Cukup kurangi nyawa dan kembalikan nilainya.
+            // Tidak ada lagi pengecekan atau pemanggilan onGameOver di sini.
+            return prevLives - 1;
         });
     }, []);
 
     const addScore = useCallback((amount: number) => {
-        setScore(prev => prev + amount); // `amount` dan `setScore` digunakan di sini
+        setScore(prev => prev + amount);
     }, []);
 
     const handleBackToMenu = () => router.push("/home");
     const hideEndGameCard = () => setIsEndGameCardVisible(false);
     const showEndGameCard = () => setIsEndGameCardVisible(true);
 
+    // ✨ LANGKAH 4: Berikan "kotak surat" kepada semua Karyawan
     const value = {
         score, lives, timer, gameActive, difficulty, isPreGame, isCountdown,
         addScore, loseLife, endGame,
+        setOnTimeUpCallback, // Sekarang Karyawan bisa mengakses ini
     };
 
     return (
@@ -126,7 +132,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
             {isPreGame && <PreGameOverlay onStart={startGame} />}
             {isCountdown && <CountdownOverlay count={countdown} />}
             {endGameInfo && (
-                <EndGameOverlay 
+                <EndGameOverlay
                     {...endGameInfo}
                     isVisible={isEndGameCardVisible}
                     onPlayAgain={startGame}

@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useGame } from "@/app/game/_context/GameContext";
 import { gameData } from "@/config/game.config";
+import React from "react";
 
 export default function PreGameOverlay({ onStart }: { onStart: () => void }) {
     const { difficulty } = useGame();
@@ -22,6 +23,7 @@ export default function PreGameOverlay({ onStart }: { onStart: () => void }) {
                 <h2 className="text-4xl font-bold mb-4">{gameMode?.name || "Siap Bermain?"}</h2>
 
                 <div className="mb-6 text-left space-y-2 text-gray-600">
+                    {/* Yang ini sudah benar, karena <p> punya key */}
                     {gameMode?.desc.map((p, i) => <p key={i}>{p}</p>)}
                 </div>
 
@@ -32,10 +34,11 @@ export default function PreGameOverlay({ onStart }: { onStart: () => void }) {
                     <h4 className="font-semibold mt-3 mb-2">Perolehan Skor:</h4>
                     <div className="grid grid-cols-2 gap-x-4 text-sm">
                         {difficultySetting?.score && Object.entries(difficultySetting.score).map(([key, value]) => (
-                            <>
+                            // ✨ SOLUSINYA DI SINI: Tambahkan `key` ke Fragment ✨
+                            <React.Fragment key={key}>
                                 <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
                                 <span className="text-right font-semibold">{value} poin</span>
-                            </>
+                            </React.Fragment>
                         ))}
                     </div>
                 </div>

@@ -12,7 +12,7 @@ const satuan = ["puluh", "belas", "ratus", "ribu", "juta", "miliar", "triliun"];
 const khusus = ["sepuluh", "sebelas", "seratus", "seribu"];
 
 export default function TulisGamePage() {
-    const { addScore, loseLife, endGame, gameActive, difficulty, timer, isCountdown } = useGame();
+    const { lives, addScore, loseLife, endGame, gameActive, difficulty, timer, isCountdown, setOnTimeUpCallback } = useGame();
 
     const [targetNumber, setTargetNumber] = useState<string>("");
     const [kataArray, setKataArray] = useState<string[]>([]);
@@ -59,7 +59,7 @@ export default function TulisGamePage() {
         const totalPoints = pointsCorrect + pointsCompleted + pointsTimeBonus;
 
         // Tambahkan skor ke context HANYA di sini
-        addScore(totalPoints);
+        addScore(pointsCorrect);
 
         return (
             <div className="text-left space-y-1">
@@ -98,13 +98,21 @@ export default function TulisGamePage() {
         );
     }, [targetNumber, handleEndGame]); // Tambahkan dependensi yang relevan
 
-    // ✨ INI EFEK BARU UNTUK MENDENGARKAN TIMER ✨
     useEffect(() => {
-        // Jika timer habis DAN game sedang aktif (untuk mencegah trigger saat inisialisasi)
-        if (timer <= 0 && gameActive) {
-            handleTimeUp();
-        }
-    }, [timer, gameActive, handleTimeUp]); // Dengarkan perubahan timer
+        // FASE 1: "MENARUH SURAT"
+        // Ini berjalan saat komponen muncul (mount) atau dependensinya berubah.
+        // "Boss, ini surat instruksi dariku."
+        setOnTimeUpCallback(() => handleTimeUp);
+
+        // FASE 2: "MENGAMBIL KEMBALI SURAT" (Cleanup Function)
+        // Ini berjalan TEPAT SEBELUM komponen pergi (unmount)
+        // atau TEPAT SEBELUM efek ini berjalan lagi.
+        return () => {
+            // "Boss, aku akan pergi. Aku ambil kembali surat instruksiku
+            // agar amplopmu bersih dan tidak ada instruksi usang."
+            setOnTimeUpCallback(null);
+        };
+    }, [setOnTimeUpCallback, handleTimeUp]);
 
     useEffect(() => {
         if (gameActive) {
@@ -132,13 +140,19 @@ export default function TulisGamePage() {
         } else {
             setFlashError(true);
             setTimeout(() => setFlashError(false), 300);
-            loseLife({
-                onGameOver: () => {
-                    handleEndGame("Game Over", `Nyawamu habis. Jawaban yang benar adalah: ${jawabanBenar}`, false);
-                }
-            });
+            loseLife();
         }
     };
+
+    useEffect(() => {
+        // Jika nyawa habis DAN permainan belum selesai...
+        if (lives <= 0 && gameActive) {
+            // ... jalankan logika game over yang spesifik untuk mode ini
+            const jawabanBenar = terbilang(Number(targetNumber));
+            handleEndGame("Game Over", `Nyawamu habis. Jawaban yang benar adalah: ${jawabanBenar}`, false);
+        }
+        // Awasi perubahan 'lives' dan 'gameActive'
+    }, [lives, gameActive, handleEndGame, targetNumber]);
 
     // 5. Render UI yang spesifik untuk gameplay mode Tulis
     return (
