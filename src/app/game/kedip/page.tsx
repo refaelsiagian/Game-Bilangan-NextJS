@@ -114,7 +114,7 @@ export default function Kedip() {
         setTargetNumber(num);
         setFixedIndices(currentFixedIndices);
         const correctText = terbilang(Number(num));
-        const wrongTexts = generateWrongOptions(num, difficulty, 1);
+        const wrongTexts = generateWrongOptions(num, difficulty, 7);
         const allOptionsText = shuffleArray([correctText, ...wrongTexts]);
         setOptions(allOptionsText.map(txt => ({
             text: txt,
@@ -128,7 +128,7 @@ export default function Kedip() {
         if (isGameFinished) return;
         setIsGameFinished(true);
         setIsRoundFinished(true); // Ensure game elements are static
-        
+
         if (blinkIntervalRef.current) clearInterval(blinkIntervalRef.current);
         if (roundTimeoutRef.current) clearTimeout(roundTimeoutRef.current);
 
@@ -180,16 +180,16 @@ export default function Kedip() {
         if (isGameFinished || !gameActive) return; // Prevent submitting if game is over or not active
 
         const selectedOption = options[currentOptionIndex];
-        
+
         if (selectedOption.isCorrect) {
             addScore(gameModeConfig.difficulty[difficulty].score.correct);
             setCorrectRounds(prev => prev + 1);
-            
+
             const newOptions = [...options];
             newOptions[currentOptionIndex].status = 'correct';
             setOptions(newOptions);
             setIsRoundFinished(true); // Mark round as finished
-            
+
             // Stop blinking after correct answer
             if (blinkIntervalRef.current) clearInterval(blinkIntervalRef.current);
             setBlinkPositions([]);
@@ -206,43 +206,21 @@ export default function Kedip() {
             const newOptions = [...options];
             newOptions[currentOptionIndex].status = 'wrong';
             setOptions(newOptions);
-            
+
             // 2. Kurangi nyawa
             loseLife();
-
-            // 3. Round TIDAK selesai, pemain masih bisa mencoba lagi
-            // isRoundFinished tetap false
-            // Tombol navigasi dan submit tetap aktif
-            // Blink tetap berjalan
         }
     };
-    
+
     // Navigasi
     const handlePrevOption = () => {
-        if (isRoundFinished || !gameActive) return; // Only allow navigation if round isn't finished and game is active
-        setCurrentOptionIndex(prev => {
-            const newIndex = (prev - 1 + options.length) % options.length;
-            // Reset status of previously selected option if it was marked 'wrong'
-            const updatedOptions = [...options];
-            if (updatedOptions[prev].status === 'wrong') {
-                updatedOptions[prev].status = 'normal';
-                setOptions(updatedOptions);
-            }
-            return newIndex;
-        });
+        if (isRoundFinished || !gameActive) return;
+        setCurrentOptionIndex(prev => (prev - 1 + options.length) % options.length);
     };
+
     const handleNextOption = () => {
-        if (isRoundFinished || !gameActive) return; // Only allow navigation if round isn't finished and game is active
-        setCurrentOptionIndex(prev => {
-            const newIndex = (prev + 1) % options.length;
-            // Reset status of previously selected option if it was marked 'wrong'
-            const updatedOptions = [...options];
-            if (updatedOptions[prev].status === 'wrong') {
-                updatedOptions[prev].status = 'normal';
-                setOptions(updatedOptions);
-            }
-            return newIndex;
-        });
+        if (isRoundFinished || !gameActive) return;
+        setCurrentOptionIndex(prev => (prev + 1) % options.length);
     };
 
     useEffect(() => {
@@ -258,7 +236,7 @@ export default function Kedip() {
             if (roundTimeoutRef.current) clearTimeout(roundTimeoutRef.current);
         };
     }, [gameActive, setupNewRound, isCountdown]);
-    
+
     useEffect(() => {
         if (isCountdown) {
             setTargetNumber('');
