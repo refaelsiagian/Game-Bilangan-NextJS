@@ -160,8 +160,16 @@ export default function Cocok() {
 
     // ✨ 3. Buat "surat instruksi" untuk Boss jika waktu habis
     const handleTimeUp = useCallback(() => {
+        setAnswered(true);
+        setRevealDigits(true);
+
+        // 2. Set state 'feedback' untuk menyorot jawaban yang benar dengan warna hijau
+        setFeedback({
+            [correctAnswer]: 'correct'
+        });
+
         handleEndGame("Waktu Habis!", "Waktu Anda telah habis.");
-    }, [handleEndGame]);
+    }, [handleEndGame, correctAnswer]);
 
     // ✨ 4. Terapkan pola "Amplop": Daftarkan instruksi ke Boss
     useEffect(() => {
@@ -206,7 +214,7 @@ export default function Cocok() {
 
             // ✨ 6. Panggil loseLife versi sederhana dan biarkan useEffect yang menanganinya
             loseLife();
-            
+
             // Atur timeout untuk ronde berikutnya jika nyawa masih ada
             setTimeout(() => {
                 if (gameActive && !isGameFinished && lives > 1) { // Cek lives > 1 karena update state async
@@ -215,7 +223,7 @@ export default function Cocok() {
             }, 1200);
         }
     };
-    
+
     // useEffect lainnya tetap sama
     useEffect(() => {
         if (gameActive) {
@@ -236,32 +244,32 @@ export default function Cocok() {
     }, [isCountdown]);
 
     return (
-     <main className="container mx-auto py-6 relative">
-         <NumberSlots
-             digits={targetNumber ? targetNumber.split('') : []}
-             hintIndices={hintIndices}
-             revealDigits={revealDigits}
-             countdownActive={isCountdown}
-         />
-         <div className="lg:max-w-3xl md:max-w-2xl sm:max-w-lg max-w-sm mx-auto mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-             {options.map((option, index) => {
-                 const feedbackClass = feedback[option] === 'correct'
-                     ? 'bg-green-500 hover:bg-green-600 border-green-500 text-white'
-                     : feedback[option] === 'wrong'
-                         ? 'bg-red-500 hover:bg-red-600 border-red-500 text-white'
-                         : 'bg-white hover:bg-blue-50 border-gray-300';
-                 return (
-                     <button
-                         key={index}
-                         onClick={() => handleOptionClick(option)}
-                         disabled={answered || isGameFinished}
-                         className={`p-4 rounded-xl shadow-md text-center transition-all duration-300 text-sm md:text-base font-semibold border-2 ${feedbackClass} ${answered || isGameFinished ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                     >
-                         {option}
-                     </button>
-                 );
-             })}
-         </div>
-     </main>
- );
+        <main className="container mx-auto py-6 relative">
+            <NumberSlots
+                digits={targetNumber ? targetNumber.split('') : []}
+                hintIndices={hintIndices}
+                revealDigits={revealDigits}
+                countdownActive={isCountdown}
+            />
+            <div className="lg:max-w-3xl md:max-w-2xl sm:max-w-lg max-w-sm mx-auto mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {options.map((option, index) => {
+                    const feedbackClass = feedback[option] === 'correct'
+                        ? 'bg-green-500 hover:bg-green-600 border-green-500 text-white'
+                        : feedback[option] === 'wrong'
+                            ? 'bg-red-500 hover:bg-red-600 border-red-500 text-white'
+                            : 'bg-white hover:bg-blue-50 border-gray-300';
+                    return (
+                        <button
+                            key={index}
+                            onClick={() => handleOptionClick(option)}
+                            disabled={answered || isGameFinished}
+                            className={`p-4 rounded-xl shadow-md text-center transition-all duration-300 text-sm md:text-base font-semibold border-2 ${feedbackClass} ${answered || isGameFinished ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                            {option}
+                        </button>
+                    );
+                })}
+            </div>
+        </main>
+    );
 }
