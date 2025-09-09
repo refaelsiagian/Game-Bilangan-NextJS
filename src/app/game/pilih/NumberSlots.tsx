@@ -31,9 +31,9 @@ export default function NumberSlots({
                     // Jika countdown atau data belum siap, render placeholder
                     ? Array.from({ length: displayLength }).map((_, index) => (
                         <React.Fragment key={`ph-${index}`}>
-                            <span className="h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl target-digit">_</span>
+                            <span className="target-number-item target-digit">_</span>
                             {((index + 1) % 3 === 0 && index < displayLength - 1) && (
-                                <span className="target-separator">.</span>
+                                <span className="target-number-item target-separator">.</span>
                             )}
                         </React.Fragment>
                     ))
@@ -67,13 +67,13 @@ export default function NumberSlots({
                                         if (isFixed || isFilled || gameEnded) return;
                                         onSlotClick(index);
                                     }}
-                                    className={`h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl ${slotClass}`}
+                                    className={`target-number-item ${slotClass}`}
                                     aria-label={`slot-${index}`}
                                 >
                                     {content}
                                 </span>
                                 {((index + 1) % 3 === 0 && index < digits.length - 1) && (
-                                    <span className="target-separator">.</span>
+                                    <span className="target-number-item target-separator">.</span>
                                 )}
                             </React.Fragment>
                         );

@@ -26,8 +26,8 @@ export default function NumberSlotsSalah({
     if (digits.length === 0 || countdownActive) {
         const placeholders = Array.from({ length: 15 }, (_, i) => (
             <React.Fragment key={`ph-${i}`}>
-                <span className="h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl target-digit">_</span>
-                {((i + 1) % 3 === 0 && i !== 14) && <span className="target-separator">.</span>}
+                <span className="target-number-item target-digit">_</span>
+                {((i + 1) % 3 === 0 && i !== 14) && <span className="target-number-item target-separator">.</span>}
             </React.Fragment>
         ));
         return <div className="text-center mb-4 relative z-10">
@@ -54,7 +54,7 @@ export default function NumberSlotsSalah({
                             slotClass += " bg-red-500 text-white";
                         } else if (isActuallyWrong && !isSelected) {
                             // Terlewat: Tidak memilih digit yang seharusnya salah
-                            slotClass += " border-2 border-yellow-400";
+                            slotClass += " border-2 border-green-500";
                         }
                     } else if (isSelected) {
                         // Saat game berjalan dan digit dipilih
@@ -72,12 +72,12 @@ export default function NumberSlotsSalah({
                         <React.Fragment key={`digit-frag-${index}`}>
                             <span
                                 onClick={() => !isGameFinished && onSlotClick(index)}
-                                className={`h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl transition-colors duration-200 ${slotClass}`}
+                                className={`target-number-item transition-colors duration-200 ${slotClass}`}
                             >
                                 {digit}
                             </span>
                             {((index + 1) % 3 === 0 && index !== digits.length - 1) && (
-                                <span className="target-separator">.</span>
+                                <span className="target-number-item target-separator">.</span>
                             )}
                         </React.Fragment>
                     );

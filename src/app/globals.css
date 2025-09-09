@@ -91,8 +91,12 @@
         @apply inline-flex flex-nowrap bg-neutral-900 rounded-lg overflow-x-auto px-5 sm:px-7 lg:px-15 py-1 md:py-2 gap-0.5 sm:gap-0.5 lg:gap-1 text-xl sm:text-2xl md:text-3xl lg:text-4xl;
     }
 
+    .target-number-item {
+        @apply h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl
+    }
+
     .target-digit {
-        @apply text-blue-400 lg:w-11 md:w-8 sm:w-7 w-5;
+        @apply text-blue-400  lg:w-11 md:w-8 sm:w-7 w-[18px];
     }
 
     .target-digit-filled {
@@ -104,6 +108,6 @@
     }
 
     .target-separator {
-        @apply text-gray-600 lg:w-3 sm:w-2 w-1;
+        @apply text-gray-600 lg:w-3 sm:w-2 w-0.5;
     }
 }

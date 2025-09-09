@@ -25,9 +25,9 @@ export default function NumberSlotsCocok({
                 <div className="font-orbitron target-number-box">
                     {placeholders.map((_, index) => (
                         <React.Fragment key={`ph-group-${index}`}>
-                            <span className="h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl target-digit">_</span>
+                            <span className="target-number-item target-digit">_</span>
                             {((index + 1) % 3 === 0 && index < displayLength - 1) && (
-                                <span className="target-separator">.</span>
+                                <span className="target-number-item target-separator">.</span>
                             )}
                         </React.Fragment>
                     ))}
@@ -58,14 +58,14 @@ export default function NumberSlotsCocok({
                     return (
                         <React.Fragment key={`cell-group-${index}`}>
                             <span
-                                className={`h-8 sm:h-10 md:h-12 lg:h-14 flex items-center justify-center rounded shadow-xl 
+                                className={`target-number-item 
                                     transition-colors duration-300 ${digitClass}`}
                             >
                                 {shouldBeVisible ? digit : "_"}
                             </span>
 
                             {((index + 1) % 3 === 0 && index < digits.length - 1) && (
-                                <span className="target-separator">.</span>
+                                <span className="target-number-item target-separator">.</span>
                             )}
                         </React.Fragment>
                     );
