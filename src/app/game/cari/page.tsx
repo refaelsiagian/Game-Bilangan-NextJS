@@ -171,6 +171,7 @@ export default function Cari() {
                     onSlotClick={handleSlotClick}
                     countdownActive={isCountdown}
                     isCorrect={isCorrect}
+                    isGameActive={gameActive}
                 />
                 <div className="text-center mb-4 z-10">
                     <div className={`border rounded-xl shadow-2xl p-3 min-h-[60px] min-w-[400px] sm:min-w-[600px] md:min-w-[750px] mx-auto transition ${flashError ? "bg-red-300" : "bg-[#faf8ff]"}`}>

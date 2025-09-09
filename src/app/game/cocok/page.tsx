@@ -235,14 +235,6 @@ export default function Cocok() {
         }
     }, [isCountdown]);
 
-    // ✨ 7. HAPUS useEffect yang lama untuk timer
-    // useEffect(() => {
-    //     if (timer <= 0 && gameActive && !isGameFinished) {
-    //         handleEndGame("Waktu Habis!", "Waktu Anda telah habis.");
-    //     }
-    // }, [timer, gameActive, isGameFinished, handleEndGame]);
-
-    // ... sisa kode JSX untuk render tidak berubah ...
     return (
      <main className="container mx-auto py-6 relative">
          <NumberSlots

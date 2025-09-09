@@ -11,6 +11,7 @@ type Props = {
     onSlotClick: (index: number) => void;
     countdownActive?: boolean;
     isCorrect?: boolean;
+    isGameActive?: boolean;
 };
 
 export default function NumberSlots({
@@ -20,7 +21,8 @@ export default function NumberSlots({
     isGameFinished,
     onSlotClick,
     countdownActive = false,
-    isCorrect = false
+    isCorrect = false,
+    isGameActive = false,
 }: Props) {
 
     return (
@@ -32,7 +34,7 @@ export default function NumberSlots({
                 let slotClass = "";
 
                 // Prioritas 1: Game sudah berakhir (waktu/nyawa habis)
-                if (isGameFinished) {
+                if (isGameFinished || !isGameActive) {
                     slotClass = "target-digit cursor-default"; // Dasar untuk semua slot
 
                     if (isSelected && isActuallyWrong) {
