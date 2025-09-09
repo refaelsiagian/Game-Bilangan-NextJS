@@ -1,5 +1,3 @@
-// app/game/_components/NumberSlotsSalah.tsx
-
 import React from "react";
 
 type Props = {
@@ -22,7 +20,6 @@ export default function NumberSlotsSalah({
     isCorrect = false
 }: Props) {
 
-    // Jika belum ada angka (saat countdown), tampilkan placeholder
     if (digits.length === 0 || countdownActive) {
         const placeholders = Array.from({ length: 15 }, (_, i) => (
             <React.Fragment key={`ph-${i}`}>
@@ -41,38 +38,45 @@ export default function NumberSlotsSalah({
                 {digits.map((digit, index) => {
                     const isSelected = selectedIndices.includes(index);
                     const isActuallyWrong = wrongIndices.includes(index);
+                    
+                    let slotClass = "";
 
-                    let slotClass = "target-digit cursor-pointer hover:bg-gray-800"; // Default
-
+                    // Prioritas 1: Game sudah berakhir (waktu/nyawa habis)
                     if (isGameFinished) {
-                        slotClass = "target-digit cursor-default"; // Dasar saat game selesai
-                        if (isActuallyWrong && isSelected) {
-                            // Benar: Memilih digit yang memang salah
+                        slotClass = "target-digit cursor-default"; // Dasar untuk semua slot
+
+                        if (isSelected && isActuallyWrong) {
+                            // TEPAT: Pemain memilih digit yang memang salah.
                             slotClass += " bg-green-500 text-white";
-                        } else if (!isActuallyWrong && isSelected) {
-                            // Salah: Memilih digit yang seharusnya benar
+                        } else if (isSelected && !isActuallyWrong) {
+                            // KELIRU: Pemain memilih digit yang seharusnya benar.
                             slotClass += " bg-red-500 text-white";
-                        } else if (isActuallyWrong && !isSelected) {
-                            // Terlewat: Tidak memilih digit yang seharusnya salah
+                        } else if (!isSelected && isActuallyWrong) {
+                            // TERLEWAT: Pemain TIDAK memilih digit yang seharusnya salah.
                             slotClass += " border-2 border-green-500";
                         }
-                    } else if (isSelected) {
-                        // Saat game berjalan dan digit dipilih
-                        slotClass = "target-digit cursor-pointer text-white";
-                        if (isCorrect) {
-                            // Benar: Memilih digit yang seharusnya benar
-                            slotClass += " bg-green-500";
-                        } else {
-                            // Salah: Memilih digit yang seharusnya salah
-                            slotClass += " bg-blue-500";
+                    } 
+                    // Prioritas 2: Ronde baru saja dijawab dengan benar
+                    else if (isCorrect) {
+                        slotClass = "target-digit cursor-default";
+                        if (isSelected) {
+                            slotClass += " bg-green-500 text-white";
                         }
+                    } 
+                    // Prioritas 3: Game sedang berjalan, pemain sedang memilih
+                    else if (isSelected) {
+                        slotClass = "target-digit cursor-pointer bg-blue-500 text-white";
+                    } 
+                    // Prioritas 4: Kondisi default saat game berjalan
+                    else {
+                        slotClass = "target-digit cursor-pointer hover:bg-gray-800";
                     }
-
+                    
                     return (
                         <React.Fragment key={`digit-frag-${index}`}>
                             <span
-                                onClick={() => !isGameFinished && onSlotClick(index)}
-                                className={`target-number-item transition-colors duration-200 ${slotClass}`}
+                                onClick={() => !isGameFinished && !isCorrect && onSlotClick(index)}
+                                className={`target-number-item transition-all duration-200 ${slotClass}`}
                             >
                                 {digit}
                             </span>
@@ -86,3 +90,4 @@ export default function NumberSlotsSalah({
         </div>
     );
 }
+

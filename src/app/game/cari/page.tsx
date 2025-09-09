@@ -38,7 +38,7 @@ export default function Cari() {
         // --- Logika injectWrongDigits dari Vanilla JS ---
         const fixedIndices = difficulty === 'mudah' ? findFixedIndices(targetDigits) : [];
         const usedIndices = new Set<number>();
-        const wrongCount = (difficulty === "mudah") ? (Math.floor(Math.random() * 3) + 1) : 
+        const wrongCount = (difficulty === "mudah") ? (Math.floor(Math.random() * 3) + 1) :
             (difficulty === "sedang") ? (Math.floor(Math.random() * 5) + 1) : (Math.floor(Math.random() * 8));
 
         while (newWrongIndices.length < wrongCount) {
@@ -152,7 +152,7 @@ export default function Cari() {
             setupNewRound();
         }
     }, [gameActive, setupNewRound]);
-    
+
     useEffect(() => {
         if (isCountdown) {
             setDisplayDigits([]);
@@ -161,32 +161,32 @@ export default function Cari() {
     }, [isCountdown]);
 
     return (
-     <div>
-         <div className="flex flex-col items-center">
-             <NumberSlots
-                 digits={displayDigits}
-                 selectedIndices={selectedIndices}
-                 wrongIndices={wrongIndices}
-                 isGameFinished={isGameFinished}
-                 onSlotClick={handleSlotClick}
-                 countdownActive={isCountdown}
-                 isCorrect={isCorrect}
-             />
-             <div className="text-center mb-4 z-10">
-                 <div className={`border rounded-xl shadow-2xl p-3 min-h-[60px] min-w-[400px] sm:min-w-[600px] md:min-w-[750px] mx-auto transition ${flashError ? "bg-red-300" : "bg-[#faf8ff]"}`}>
-                     <span className="text-gray-700 font-semibold">
-                         {hasilTerbilang}
-                     </span>
-                 </div>
-             </div>
-             <button
-                 onClick={handleCheckAnswer}
-                 disabled={!gameActive || isGameFinished}
-                 className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-10 rounded-xl text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
-             >
-                 Periksa
-             </button>
-         </div>
-     </div>
- );
+        <div>
+            <div className="flex flex-col items-center">
+                <NumberSlots
+                    digits={displayDigits}
+                    selectedIndices={selectedIndices}
+                    wrongIndices={wrongIndices}
+                    isGameFinished={isGameFinished}
+                    onSlotClick={handleSlotClick}
+                    countdownActive={isCountdown}
+                    isCorrect={isCorrect}
+                />
+                <div className="text-center mb-4 z-10">
+                    <div className={`border rounded-xl shadow-2xl p-3 min-h-[60px] min-w-[400px] sm:min-w-[600px] md:min-w-[750px] mx-auto transition ${flashError ? "bg-red-300" : "bg-[#faf8ff]"}`}>
+                        <span className="text-gray-700 font-semibold">
+                            {hasilTerbilang}
+                        </span>
+                    </div>
+                </div>
+                <button
+                    onClick={handleCheckAnswer}
+                    disabled={!gameActive || isGameFinished}
+                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-10 rounded-xl text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                    Periksa
+                </button>
+            </div>
+        </div>
+    );
 }
