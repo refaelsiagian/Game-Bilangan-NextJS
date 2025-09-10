@@ -18,8 +18,8 @@ export default function InfoBar() {
     const { score, timer, lives } = useGame();
 
     return (
-        <div className="flex justify-center items-center mb-3 font-bold bg-[#624b99] shadow-2xl rounded-2xl px-4 py-2 gap-16 w-[350px] mx-auto z-10">
-            <div className="flex flex-col items-center">
+        <div className="flex justify-center items-center mb-3 font-bold bg-[#624b99] shadow-2xl rounded-2xl px-4 py-2 gap-16 w-[300px] sm:w-[400px] mx-auto z-10">
+            <div className="flex flex-col items-center ml-2">
                 <span className="md:text-sm text-xs text-amber-300 leading-tight">Skor</span>
                 <span className="text-[#f7f4ff] leading-tight">{score}</span>
             </div>
