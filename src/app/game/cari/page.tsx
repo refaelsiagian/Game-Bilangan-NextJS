@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useGame } from "@/app/game/_context/GameContext";
 import { terbilang, generateRandomNumberByDifficulty, findFixedIndices } from "@/utils/number";
 import NumberSlots from "./NumberSlots";
+import TerbilangBox from "@/app/game/_components/TerbilangBox";
 import { gameData } from "@/config/game.config";
 
 export default function Cari() {
@@ -173,13 +174,11 @@ export default function Cari() {
                     isCorrect={isCorrect}
                     isGameActive={gameActive}
                 />
-                <div className="text-center mb-4 z-10">
-                    <div className={`border rounded-xl shadow-2xl p-3 min-h-[60px] min-w-[400px] sm:min-w-[600px] md:min-w-[750px] mx-auto transition ${flashError ? "bg-red-300" : "bg-[#faf8ff]"}`}>
-                        <span className="text-gray-700 font-semibold">
-                            {hasilTerbilang}
-                        </span>
-                    </div>
-                </div>
+
+                <TerbilangBox isCountdown={isCountdown} flashError={flashError} isMuted={isCountdown || hasilTerbilang === ""}>
+                    {hasilTerbilang}
+                </TerbilangBox>
+
                 <button
                     onClick={handleCheckAnswer}
                     disabled={!gameActive || isGameFinished}

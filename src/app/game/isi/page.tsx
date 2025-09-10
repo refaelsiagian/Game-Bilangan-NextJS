@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useGame } from "@/app/game/_context/GameContext";
 import { terbilang, generateRandomNumberByDifficulty, findFixedIndices } from "@/utils/number";
 import NumberSlots from "./NumberSlots";
+import TerbilangBox from "@/app/game/_components/TerbilangBox";
 import { gameData } from "@/config/game.config";
 
 export default function Isi() {
@@ -85,7 +86,7 @@ export default function Isi() {
             </div>
         );
 
-        endGame({title, message: overlayMessage});
+        endGame({ title, message: overlayMessage });
     }, [endGame, correctDigitsCount, difficulty, isGameFinished, scoreDetail, timer]);
 
     // ✨ 2. Buat "surat instruksi" untuk Boss jika waktu habis
@@ -175,11 +176,11 @@ export default function Isi() {
                 isGameFinished={isGameFinished}
                 countdownActive={isCountdown}
             />
-            <div className={`text-center mb-4 p-3 border rounded-lg shadow-sm w-full min-h-[60px] flex items-center justify-center transition ${flashError ? 'bg-red-300' : 'bg-white'}`}>
-                <span className="text-gray-700 font-semibold text-lg">
-                    {hasilTerbilang}
-                </span>
-            </div>
+
+            <TerbilangBox isCountdown={isCountdown} flashError={flashError} isMuted={isCountdown || hasilTerbilang === ""}>
+                {hasilTerbilang}
+            </TerbilangBox>
+
             <div className="grid grid-cols-3 gap-2 w-full max-w-xs">
                 {numberButtons.map(num => (
                     <button

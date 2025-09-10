@@ -9,6 +9,7 @@ import {
     findFixedIndices
 } from "@/utils/number";
 import NumberSlots from "./NumberSlots";
+import TerbilangBox from "@/app/game/_components/TerbilangBox";
 import { gameData } from "@/config/game.config";
 
 export default function GamePilih() {
@@ -60,7 +61,7 @@ export default function GamePilih() {
         setCurrentDigit(initialPending.pop() ?? null);
         setFilledSlots(initialFilled);
     }, [difficulty]);
-    
+
     // ✨ 2. Pindahkan logika skor total ke dalam handleEndGame
     const handleEndGame = useCallback((title: string, message: string, isWin: boolean) => {
         if (isGameFinished) return;
@@ -131,9 +132,9 @@ export default function GamePilih() {
             const nextDigit = nextPending.pop() ?? null;
             setCurrentDigit(nextDigit);
             setPendingDigits(nextPending);
-            
+
             const requiredPlayerPlacements = difficulty === "mudah" ? 9 : 15;
-            
+
             if (correctDigitsCount + 1 === requiredPlayerPlacements) {
                 handleEndGame("Selamat!", "Anda menyelesaikan ronde ini.", true);
             }
@@ -168,7 +169,7 @@ export default function GamePilih() {
             setupNewRound();
         }
     }, [gameActive, setupNewRound]);
-    
+
     useEffect(() => {
         if (isCountdown) {
             setHasilTerbilang("Bersiap...");
@@ -189,41 +190,39 @@ export default function GamePilih() {
 
     // ... sisa kode JSX untuk render tidak berubah ...
     return (
-     <div className="flex flex-col items-center">
-         <NumberSlots
-             digits={targetDigits}
-             filledSlots={filledSlots}
-             onSlotClick={handleSlotClick}
-             fixedIndices={findFixedIndices(targetDigits)}
-             countdownActive={isCountdown}
-             displayLength={15}
-             gameEnded={isGameFinished}
-         />
-         <div className="w-full mb-4">
-             <div className="lg:max-w-3xl md:max-w-2xl sm:max-w-lg max-w-sm mx-auto flex flex-col gap-4">
-                <div className={`p-4 rounded-xl shadow-md text-center font-semibold text-sm md:text-base min-h-[60px] flex items-center justify-center transition-colors border-2 ${flashError ? "bg-red-300" : "bg-[#faf8ff]"} ${isCountdown ? "text-gray-400" : ""}`}>
-                     {isCountdown ? "Bersiap..." : hasilTerbilang}
+        <div className="flex flex-col items-center">
+            <NumberSlots
+                digits={targetDigits}
+                filledSlots={filledSlots}
+                onSlotClick={handleSlotClick}
+                fixedIndices={findFixedIndices(targetDigits)}
+                countdownActive={isCountdown}
+                displayLength={15}
+                gameEnded={isGameFinished}
+            />
+
+            <TerbilangBox isCountdown={isCountdown} flashError={flashError} isMuted={isCountdown || hasilTerbilang === ""}>
+                {hasilTerbilang}
+            </TerbilangBox>
+
+            <div className="text-center mb-6 space-y-4">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="flex flex-col items-center bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <span className="text-sm text-gray-500">Tempatkan Digit Ini</span>
+                        <div className={`font-orbitron text-7xl font-bold text-blue-600 w-24 h-24 flex items-center justify-center`}>
+                            {currentDigit ?? '_'}
+                        </div>
+                    </div>
+                    {difficulty === "sulit" && gameActive && !isGameFinished && (
+                        <button
+                            onClick={handleDiscard}
+                            className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-xl transition"
+                        >
+                            Buang
+                        </button>
+                    )}
                 </div>
-             </div>
-         </div>
-         <div className="text-center mb-6 space-y-4">
-             <div className="flex flex-col items-center gap-4">
-                 <div className="flex flex-col items-center bg-blue-50 border border-blue-200 rounded-xl p-4">
-                     <span className="text-sm text-gray-500">Tempatkan Digit Ini</span>
-                     <div className={`font-orbitron text-7xl font-bold text-blue-600 w-24 h-24 flex items-center justify-center`}>
-                         {currentDigit ?? '_'}
-                     </div>
-                 </div>
-                 {difficulty === "sulit" && gameActive && !isGameFinished && (
-                     <button
-                         onClick={handleDiscard}
-                         className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-xl transition"
-                     >
-                         Buang
-                     </button>
-                 )}
-             </div>
-         </div>
-     </div>
- );
+            </div>
+        </div>
+    );
 }

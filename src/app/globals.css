@@ -110,4 +110,12 @@
     .target-separator {
         @apply text-gray-600 lg:w-3 sm:w-2 w-0.5;
     }
+
+    .terbilang-container {
+        @apply lg:max-w-3xl md:max-w-2xl sm:max-w-lg max-w-xs mx-auto flex flex-col gap-4
+    }
+
+    .terbilang-box {
+        @apply p-4 rounded-xl shadow-md text-center font-semibold text-sm md:text-base min-h-[60px] flex items-center justify-center
+    }
 }

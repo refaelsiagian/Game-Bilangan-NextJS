@@ -6,6 +6,7 @@ import { terbilang, generateRandomNumberByDifficulty } from "@/utils/number";
 import { gameData } from "@/config/game.config";
 import { JSX } from "react";
 import NumberSlots from "./NumberSlots"; // Impor komponen baru
+import TerbilangBox from "@/app/game/_components/TerbilangBox";
 
 const angkaDasar = ["nol", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan"];
 const satuan = ["puluh", "belas", "ratus", "ribu", "juta", "miliar", "triliun"];
@@ -160,22 +161,12 @@ export default function TulisGamePage() {
             {/* Target Number Display */}
             <NumberSlots targetNumber={targetNumber} isCountdown={isCountdown} />
 
-            {/* Kotak Jawaban & Kontrol */}
-            <div className="text-center mb-4 z-10">
-                {/* Kotak Jawaban */}
-                {/* ERROR 4: Sama seperti error 3, className harus diapit {} dan backtick ` */}
-                <div className={`border rounded-xl shadow-2xl p-3 min-h-[60px] min-w-[400px] sm:min-w-[600px] md:min-w-[750px] mx-auto transition ${flashError ? "bg-red-200" : "bg-white"}`}>
-                    <span className={kataArray.length === 0 ? "text-gray-400" : ""}>
-                        {highlightedAnswer ? highlightedAnswer
-                            : (
-                                kataArray.length === 0 ? (
-                                    isCountdown ? "Bersiap..." : "Gunakan tombol di bawah..."
-                                ) : kataArray.join(" ")
-                            )}
-                    </span>
-                </div>
-            </div>
-
+            <TerbilangBox isCountdown={isCountdown} flashError={flashError} isMuted={isCountdown || kataArray.length === 0}>
+                {highlightedAnswer
+                    ? highlightedAnswer
+                    : (kataArray.length === 0 ? "Gunakan tombol di bawah.." : kataArray.join(" "))
+                }
+            </TerbilangBox>
 
             {/* Tombol Kontrol */}
             <div className="text-center mb-6 z-10">
