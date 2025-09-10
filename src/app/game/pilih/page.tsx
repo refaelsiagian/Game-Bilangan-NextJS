@@ -199,11 +199,11 @@ export default function GamePilih() {
              displayLength={15}
              gameEnded={isGameFinished}
          />
-         <div className="text-center mb-4 z-10">
-             <div className={`border rounded-xl shadow-2xl p-3 min-h-[60px] min-w-[400px] sm:min-w-[600px] md:min-w-[750px] mx-auto transition ${flashError ? "bg-red-300" : "bg-[#faf8ff]"}`}>
-                 <span className={isCountdown ? "text-gray-400" : ""}>
+         <div className="w-full mb-4">
+             <div className="lg:max-w-3xl md:max-w-2xl sm:max-w-lg max-w-sm mx-auto flex flex-col gap-4">
+                <div className={`p-4 rounded-xl shadow-md text-center font-semibold text-sm md:text-base min-h-[60px] flex items-center justify-center transition-colors border-2 ${flashError ? "bg-red-300" : "bg-[#faf8ff]"} ${isCountdown ? "text-gray-400" : ""}`}>
                      {isCountdown ? "Bersiap..." : hasilTerbilang}
-                 </span>
+                </div>
              </div>
          </div>
          <div className="text-center mb-6 space-y-4">
