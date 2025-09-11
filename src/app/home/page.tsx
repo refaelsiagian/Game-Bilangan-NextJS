@@ -1,32 +1,31 @@
 "use client";
+
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation"; // 👈 import router
+import { useRouter } from "next/navigation";
 import { gameData } from "@/config/game.config";
 import Expandable from "@/components/Expandable";
 import Select from "@/components/Select";
 
 export default function MainMenu() {
+
+    // == STATE ==
     const [kategori, setKategori] = useState<"cepat" | "banyak">("cepat");
     const [expanded, setExpanded] = useState<string | null>(null);
-
-    // Difficulty disimpan per mode (key = mode.name)
     const [difficulty, setDifficulty] = useState<Record<string, string>>({});
-    const router = useRouter(); // 👈 inisialisasi router
-    const [loadingMode, setLoadingMode] = useState<string | null>(null); // mode yang sedang loading
-
+    const [loadingMode, setLoadingMode] = useState<string | null>(null);
     const getDifficulty = (modeName: string) => difficulty[modeName] ?? "mudah";
-
-    // ✨ 3. SESUAIKAN handlePlay
+    const router = useRouter(); 
+    
+    // == HANDLER ===
     const handlePlay = (modePath: string, modeName: string) => {
         setLoadingMode(modeName);
-        const diff = getDifficulty(modeName); // Langsung pakai value dari state (sudah lowercase)
+        const diff = getDifficulty(modeName);
 
         router.push(`/game/${modePath}?diff=${diff}`);
-        // setTimeout(() => {
-        // }, 800);
     };
 
+    // == RENDER ==
     return (
         <main className="min-h-screen flex flex-col items-center p-6">
             <h1 className="text-4xl font-bold mb-6 text-amber-400">Game Bilangan</h1>
@@ -63,11 +62,10 @@ export default function MainMenu() {
                             const isOpen = expanded === mode.name;
                             const isLoading = loadingMode === mode.name;
 
-                            // ✨ BUAT OPSI KESULITAN DI SINI, SPESIFIK UNTUK SETIAP MODE
+                            {/* Daftar opsi kesulitan */}
                             const difficultyOptionsForThisMode = Object.keys(mode.difficulty).map(key => ({
                                 value: key,
                                 name: key.charAt(0).toUpperCase() + key.slice(1),
-                                // Ambil deskripsi dari 'mode' saat ini, bukan 'sampleMode'
                                 desc: mode.difficulty[key as keyof typeof mode.difficulty].desc,
                             }));
 
