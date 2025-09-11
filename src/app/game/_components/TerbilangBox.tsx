@@ -3,11 +3,12 @@ import clsx from 'clsx';
 type Props = {
     children: React.ReactNode;
     isCountdown: boolean;
-    flashError: boolean;
+    flashError?: boolean;
     isMuted?: boolean;
+    customClassName?: string;
 };
 
-export default function TerbilangBox({ children, isCountdown, flashError, isMuted }: Props) {
+export default function TerbilangBox({ children, isCountdown, flashError = false, isMuted = false, customClassName = '' }: Props) {
     // 1. Logika untuk menentukan class CSS secara dinamis
     const boxClassName = clsx(
         'terbilang-box',
@@ -16,7 +17,8 @@ export default function TerbilangBox({ children, isCountdown, flashError, isMute
             'bg-[#faf8ff]': !flashError,
             // Ganti kondisi ini dari isCountdown menjadi isMuted
             'text-gray-400': isMuted,
-        }
+        },
+        customClassName
     );
 
     return (

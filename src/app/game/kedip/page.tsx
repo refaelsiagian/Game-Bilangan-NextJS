@@ -9,6 +9,7 @@ import {
     findFixedIndices
 } from "@/utils/number";
 import NumberSlots from "./NumberSlots";
+import TerbilangBox from "@/app/game/_components/TerbilangBox";
 
 // Helper function untuk membuat opsi salah (bisa tetap di sini atau dipindah ke utils)
 function generateWrongOptions(targetNumberStr: string, difficultyLevel: "mudah" | "sedang" | "sulit", count: number): string[] {
@@ -273,9 +274,9 @@ export default function Kedip() {
 
     // Helper untuk styling
     const currentOption = options.length > 0 ? options[currentOptionIndex] : null;
-    let viewerClass = 'bg-gray-100 border-gray-300';
-    if (currentOption?.status === 'correct') viewerClass = 'bg-green-200 border-green-400 text-green-800';
-    else if (currentOption?.status === 'wrong') viewerClass = 'bg-red-200 border-red-400 text-red-800';
+    let viewerClass = 'bg-gray-100 border-2 border-gray-300';
+    if (currentOption?.status === 'correct') viewerClass = 'bg-green-200 border-2 border-green-400 text-green-800';
+    else if (currentOption?.status === 'wrong') viewerClass = 'bg-red-200 border-2 border-red-400 text-red-800';
 
     return (
         <main className="container mx-auto py-6 relative">
@@ -286,10 +287,12 @@ export default function Kedip() {
                 revealDigits={isRoundFinished || !gameActive} // Reveal all if round finished or game not active
                 countdownActive={isCountdown}
             />
-            <div className="lg:max-w-3xl md:max-w-2xl sm:max-w-lg max-w-sm mx-auto mt-6 flex flex-col items-center gap-4">
-                <div className={`w-full p-4 rounded-xl shadow-md text-center font-semibold text-sm md:text-base min-h-[60px] flex items-center justify-center transition-colors duration-300 border-2 ${viewerClass}`}>
-                    {currentOption ? currentOption.text : '-- Bersiap --'}
-                </div>
+            
+            <TerbilangBox isCountdown={isCountdown} customClassName={viewerClass}>
+                {currentOption?.text}
+            </TerbilangBox>
+
+            <div className="flex flex-col items-center justify-center gap-4 mt-6">
                 <div className="flex items-center justify-center gap-4">
                     <button onClick={handlePrevOption} disabled={isRoundFinished || !gameActive} className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">Prev</button>
                     <span className="font-bold text-white">{options.length > 0 ? `${currentOptionIndex + 1} / ${options.length}` : '0 / 0'}</span>
