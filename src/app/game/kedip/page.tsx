@@ -56,7 +56,7 @@ export default function Kedip() {
         return candidates[Math.floor(Math.random() * candidates.length)];
     };
 
-    function createPermutedNumber(originalDigits: string, difficultyLevel: 'mudah' | 'sedang' | 'sulit'): string | null {
+    const createPermutedNumber = useCallback((originalDigits: string, difficultyLevel: 'mudah' | 'sedang' | 'sulit'): string | null => {
         const candidateDigits = [...originalDigits];
         const triplesCount = Math.floor(originalDigits.length / 3);
         const triplesToPermuteCount = difficultyLevel === 'mudah' ? 1 : 2;
@@ -75,9 +75,9 @@ export default function Kedip() {
             }
         }
         return candidateDigits.join(''); // Mengembalikan angka dalam bentuk string
-    }
+    }, []);
 
-    function generateWrongOptions(targetNumberStr: string, difficultyLevel: 'mudah' | 'sedang' | 'sulit', count: number): string[] {
+    const generateWrongOptions = useCallback((targetNumberStr: string, difficultyLevel: 'mudah' | 'sedang' | 'sulit', count: number): string[] => {
         const result = new Set<string>();
         const correctText = terbilang(Number(targetNumberStr));
         let attempts = 0;
@@ -95,7 +95,7 @@ export default function Kedip() {
         }
 
         return Array.from(result);
-    }
+    }, [createPermutedNumber]);
 
     const chooseBlinkPositions = useCallback(() => {
         const digits = targetNumber.split('');
@@ -137,7 +137,7 @@ export default function Kedip() {
             isCorrect: txt === correctText,
             status: 'normal',
         })));
-    }, [difficulty]);
+    }, [difficulty, generateWrongOptions]);
 
 
     // == HANDLERS ==
