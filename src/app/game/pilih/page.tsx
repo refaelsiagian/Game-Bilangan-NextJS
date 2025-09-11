@@ -8,16 +8,17 @@ import {
     shuffleArray,
     findFixedIndices
 } from "@/utils/number";
-import NumberSlots from "./NumberSlots";
+import NumberSlots from "@/app/game/pilih/NumberSlots";
 import TerbilangBox from "@/app/game/_components/TerbilangBox";
 import { gameData } from "@/config/game.config";
 
 export default function GamePilih() {
-    // ✨ 1. Ambil 'lives' dan 'setOnTimeUpCallback' dari context
+
+    // == CONTEXT ==
     const { lives, addScore, loseLife, endGame, gameActive, difficulty, timer, isCountdown, setOnTimeUpCallback } = useGame();
     const scoreDetail = gameData.cepat.find(m => m.path === 'pilih')?.difficulty[difficulty].score;
 
-    // State lokal tidak berubah
+    // == STATE ==
     const [flashError, setFlashError] = useState(false);
     const [hasilTerbilang, setHasilTerbilang] = useState("");
     const [targetDigits, setTargetDigits] = useState<string[]>([]);
@@ -27,6 +28,7 @@ export default function GamePilih() {
     const [isGameFinished, setIsGameFinished] = useState(false);
     const [correctDigitsCount, setCorrectDigitsCount] = useState(0);
 
+    // == HELPER ==
     const setupNewRound = useCallback(() => {
         setIsGameFinished(false);
         setCorrectDigitsCount(0);
@@ -39,6 +41,7 @@ export default function GamePilih() {
         let initialPending = [...digits];
         const initialFilled: { [key: number]: string } = {};
 
+        // Untuk mode mudah, tetapkan beberapa digit sebagai tetap
         if (difficulty === "mudah") {
             const fixedIndices = findFixedIndices(digits);
             fixedIndices.forEach(idx => {
@@ -47,6 +50,7 @@ export default function GamePilih() {
             initialPending = digits.filter((_, idx) => !fixedIndices.includes(idx));
         }
 
+        // Untuk mode sulit, tambahkan beberapa digit pengganggu
         if (difficulty === "sulit") {
             const allPossibleDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
             const availableDistractors = allPossibleDigits.filter(d => !digits.includes(d));
@@ -62,7 +66,50 @@ export default function GamePilih() {
         setFilledSlots(initialFilled);
     }, [difficulty]);
 
-    // ✨ 2. Pindahkan logika skor total ke dalam handleEndGame
+    // == HANDLER ===
+    const handleSlotClick = (index: number) => {
+        if (!gameActive || isGameFinished || filledSlots[index] || !currentDigit) return;
+
+        // Cek apakah digit yang dipilih benar
+        if (targetDigits[index] === currentDigit) {
+            const newFilledSlots = { ...filledSlots, [index]: currentDigit };
+            setFilledSlots(newFilledSlots);
+            addScore(scoreDetail?.correct ?? 0);
+            setCorrectDigitsCount(prev => prev + 1);
+
+            const nextPending = [...pendingDigits];
+            const nextDigit = nextPending.pop() ?? null;
+            setCurrentDigit(nextDigit);
+            setPendingDigits(nextPending);
+
+            const requiredPlayerPlacements = difficulty === "mudah" ? 9 : 15;
+
+            if (correctDigitsCount + 1 === requiredPlayerPlacements) {
+                handleEndGame("Selamat!", "Anda menyelesaikan ronde ini.", true);
+            }
+        } else {
+            loseLife();
+            setFlashError(true);
+            setTimeout(() => setFlashError(false), 300);
+        }
+    };
+
+    const handleDiscard = () => {
+        if (!gameActive || isGameFinished || !currentDigit || difficulty !== 'sulit') return;
+
+        // Cek apakah currentDigit adalah digit pengganggu
+        if (!targetDigits.includes(currentDigit)) {
+            const nextPending = [...pendingDigits];
+            const nextDigit = nextPending.pop() ?? null;
+            setCurrentDigit(nextDigit);
+            setPendingDigits(nextPending);
+        } else {
+            loseLife();
+            setFlashError(true);
+            setTimeout(() => setFlashError(false), 300);
+        }
+    };
+
     const handleEndGame = useCallback((title: string, message: string, isWin: boolean) => {
         if (isGameFinished) return;
         setIsGameFinished(true);
@@ -97,73 +144,11 @@ export default function GamePilih() {
         endGame({ title, message: overlayMessage });
     }, [isGameFinished, correctDigitsCount, timer, endGame, scoreDetail, difficulty]);
 
-    // ✨ 3. Buat "surat instruksi" untuk Boss jika waktu habis
     const handleTimeUp = useCallback(() => {
         handleEndGame("Waktu Habis!", "Waktu Anda telah habis.", false);
     }, [handleEndGame]);
 
-    // ✨ 4. Terapkan pola "Amplop": Daftarkan instruksi ke Boss
-    useEffect(() => {
-        setOnTimeUpCallback(() => handleTimeUp);
-        return () => {
-            setOnTimeUpCallback(null);
-        };
-    }, [setOnTimeUpCallback, handleTimeUp]);
-
-    // ✨ 5. Terapkan pola Reaktif: Awasi nyawa
-    useEffect(() => {
-        if (lives <= 0 && gameActive) {
-            handleEndGame("Game Over", "Nyawa Anda habis.", false);
-        }
-    }, [lives, gameActive, handleEndGame]);
-
-
-    const handleSlotClick = (index: number) => {
-        if (!gameActive || isGameFinished || filledSlots[index] || !currentDigit) return;
-
-        if (targetDigits[index] === currentDigit) {
-            // Jawaban benar
-            const newFilledSlots = { ...filledSlots, [index]: currentDigit };
-            setFilledSlots(newFilledSlots);
-            addScore(scoreDetail?.correct ?? 0);
-            setCorrectDigitsCount(prev => prev + 1);
-
-            const nextPending = [...pendingDigits];
-            const nextDigit = nextPending.pop() ?? null;
-            setCurrentDigit(nextDigit);
-            setPendingDigits(nextPending);
-
-            const requiredPlayerPlacements = difficulty === "mudah" ? 9 : 15;
-
-            if (correctDigitsCount + 1 === requiredPlayerPlacements) {
-                handleEndGame("Selamat!", "Anda menyelesaikan ronde ini.", true);
-            }
-        } else {
-            // ✨ 6. Panggil loseLife versi sederhana
-            loseLife();
-            setFlashError(true);
-            setTimeout(() => setFlashError(false), 300);
-        }
-    };
-
-    const handleDiscard = () => {
-        if (!gameActive || isGameFinished || !currentDigit || difficulty !== 'sulit') return;
-
-        if (!targetDigits.includes(currentDigit)) {
-            // Benar, ini adalah digit pengganggu
-            const nextPending = [...pendingDigits];
-            const nextDigit = nextPending.pop() ?? null;
-            setCurrentDigit(nextDigit);
-            setPendingDigits(nextPending);
-        } else {
-            // ✨ 7. Panggil loseLife versi sederhana di sini juga
-            loseLife();
-            setFlashError(true);
-            setTimeout(() => setFlashError(false), 300);
-        }
-    };
-
-    // useEffect lainnya tetap sama
+    // == EFFECT ==
     useEffect(() => {
         if (gameActive) {
             setupNewRound();
@@ -181,14 +166,20 @@ export default function GamePilih() {
         }
     }, [isCountdown]);
 
-    // ✨ 8. HAPUS useEffect yang lama untuk timer
-    // useEffect(() => {
-    //     if (timer <= 0 && gameActive) {
-    //         handleEndGame("Waktu Habis!", "Waktu Anda telah habis.", false);
-    //     }
-    // }, [timer, gameActive, handleEndGame]);
+    useEffect(() => {
+        setOnTimeUpCallback(() => handleTimeUp);
+        return () => {
+            setOnTimeUpCallback(null);
+        };
+    }, [setOnTimeUpCallback, handleTimeUp]);
 
-    // ... sisa kode JSX untuk render tidak berubah ...
+    useEffect(() => {
+        if (lives <= 0 && gameActive) {
+            handleEndGame("Game Over", "Nyawa Anda habis.", false);
+        }
+    }, [lives, gameActive, handleEndGame]);
+
+    // == RENDER ==
     return (
         <div className="flex flex-col items-center">
             <NumberSlots

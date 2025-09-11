@@ -1,5 +1,3 @@
-"use client";
-
 import NumberSlotsBase from "@/app/game/_components/NumberSlotsBase";
 import React from "react";
 
@@ -31,13 +29,13 @@ export default function NumberSlots({
                 const isFilled = filledSlots[index] !== undefined;
                 const isMissed = gameEnded && !isFixed && !isFilled;
 
-                const slotClass = isFixed
+                const slotClass = isFixed // Digit yang tetap
                     ? "target-digit cursor-default"
-                    : isFilled
+                    : isFilled // Digit yang sudah diisi
                         ? "target-digit-filled cursor-default"
-                        : isMissed
+                        : isMissed // Digit yang terlewat
                             ? "target-digit-missed cursor-default"
-                            : "target-digit hover:bg-gray-800 cursor-pointer";
+                            : "target-digit hover:bg-gray-800 cursor-pointer"; // Default
 
                 const content = isFixed
                     ? digits[index]
