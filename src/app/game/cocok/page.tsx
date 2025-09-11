@@ -41,6 +41,7 @@ export default function Cocok() {
         const targetTriples = findFixedIndices(targetDigits);
         const fixedIndices = findFixedIndices(targetDigits);
 
+        // Cari angka yang salah dengan pola yang sama (untuk difficulty 'mudah')
         do {
             const candidate = generateRandomNumberByDifficulty(difficulty);
             if (candidate === currentTargetNumber) continue;
@@ -48,6 +49,7 @@ export default function Cocok() {
             candidateTriples = findFixedIndices(wrongDigits);
         } while (!triplesMatch(targetTriples, candidateTriples));
 
+        // Ganti beberapa digit dengan digit yang benar berdasarkan hintPositions
         hintPositions.forEach(pos => {
             if (pos < wrongDigits.length && pos < currentTargetNumber.length) {
                 wrongDigits[pos] = currentTargetNumber[pos];
@@ -56,6 +58,7 @@ export default function Cocok() {
 
         const { posToSwap, swapPos } = pickSwapPositions(hintPositions, wrongDigits, fixedIndices);
 
+        // Tukar posisi angka yang salah dengan tetangganya
         if (posToSwap !== -1 && swapPos !== -1) {
             [wrongDigits[posToSwap], wrongDigits[swapPos]] = [wrongDigits[swapPos], wrongDigits[posToSwap]];
         }
@@ -96,14 +99,15 @@ export default function Cocok() {
         return { posToSwap, swapPos };
     }
 
+    // Memeriksa apakah tiga angka dalam array sama (untuk difficulty 'mudah')
     function triplesMatch(targetTriples: number[], wrongTriples: number[]) {
         if (targetTriples.length !== wrongTriples.length) return false;
         return targetTriples.every((val, index) => val === wrongTriples[index]);
     }
 
     const generateHintPositions = useCallback((
-        digits: string[], 
-        difficulty: 'mudah' | 'sedang' | 'sulit', 
+        digits: string[],
+        difficulty: 'mudah' | 'sedang' | 'sulit',
         fixedIndices: number[]
     ) => {
         const hintCount = { mudah: 3, sedang: 5, sulit: 5 }[difficulty];
@@ -133,8 +137,8 @@ export default function Cocok() {
         const correctAnswerText = terbilang(Number(correctNumber));
         const options = [correctAnswerText];
 
+        // Membuat 3 pilihan salah
         while (options.length < 4) {
-            // Kita asumsikan createWrongOption sudah tersedia dari konteks sebelumnya
             const wrongNum = createWrongOption(correctNumber, hintPositions);
             const wrongText = terbilang(Number(wrongNum));
 
@@ -155,14 +159,46 @@ export default function Cocok() {
         const fixedIndices = difficulty === "mudah" ? findFixedIndices(digits) : [];
         const hintPositions = generateHintPositions(digits, difficulty, fixedIndices);
         const allOptions = generateAnswerOptions(num, hintPositions);
-        
+
         setTargetNumber(num);
         setOptions(shuffleArray(allOptions));
         setHintIndices([...hintPositions, ...fixedIndices]);
         setCorrectAnswer(terbilang(Number(num)));
     }, [difficulty, generateHintPositions, generateAnswerOptions]);
 
-    // ✨ 2. Pindahkan logika skor akhir ke handleEndGame
+    // == HANDLERS ==
+    const handleOptionClick = (selectedOption: string) => {
+        if (!gameActive || answered || isGameFinished) return;
+
+        setAnswered(true);
+        setRevealDigits(true);
+        const isCorrect = selectedOption === correctAnswer;
+
+        // Set state 'feedback' untuk menyorot jawaban yang benar dan salah
+        if (isCorrect) {
+            setFeedback({ [selectedOption]: 'correct' });
+            addScore(gameModeConfig.difficulty[difficulty].score.correct);
+            setCorrectRounds(prev => prev + 1);
+
+            setTimeout(() => {
+                if (gameActive && !isGameFinished) {
+                    setupNewRound();
+                }
+            }, 1200);
+        } else {
+            setFeedback({
+                [selectedOption]: 'wrong',
+                [correctAnswer]: 'correct'
+            });
+            loseLife();
+            setTimeout(() => {
+                if (gameActive && !isGameFinished && lives > 1) {
+                    setupNewRound();
+                }
+            }, 1200);
+        }
+    };
+
     const handleEndGame = useCallback((title: string, message: string) => {
         if (isGameFinished) return;
         setIsGameFinished(true);
@@ -185,12 +221,10 @@ export default function Cocok() {
         endGame({ title, message: overlayMessage });
     }, [isGameFinished, gameModeConfig, difficulty, correctRounds, endGame]);
 
-    // ✨ 3. Buat "surat instruksi" untuk Boss jika waktu habis
     const handleTimeUp = useCallback(() => {
         setAnswered(true);
         setRevealDigits(true);
 
-        // 2. Set state 'feedback' untuk menyorot jawaban yang benar dengan warna hijau
         setFeedback({
             [correctAnswer]: 'correct'
         });
@@ -198,7 +232,7 @@ export default function Cocok() {
         handleEndGame("Waktu Habis!", "Waktu Anda telah habis.");
     }, [handleEndGame, correctAnswer]);
 
-    // ✨ 4. Terapkan pola "Amplop": Daftarkan instruksi ke Boss
+    // == EFFECTS ==
     useEffect(() => {
         setOnTimeUpCallback(() => handleTimeUp);
         return () => {
@@ -206,52 +240,12 @@ export default function Cocok() {
         };
     }, [setOnTimeUpCallback, handleTimeUp]);
 
-    // ✨ 5. Terapkan pola Reaktif: Awasi nyawa
     useEffect(() => {
         if (lives <= 0 && gameActive) {
             handleEndGame("Game Over", "Nyawa Anda habis.");
         }
     }, [lives, gameActive, handleEndGame]);
 
-
-    const handleOptionClick = (selectedOption: string) => {
-        if (!gameActive || answered || isGameFinished) return;
-
-        setAnswered(true);
-        setRevealDigits(true);
-        const isCorrect = selectedOption === correctAnswer;
-
-        if (isCorrect) {
-            setFeedback({ [selectedOption]: 'correct' });
-            addScore(gameModeConfig.difficulty[difficulty].score.correct);
-            setCorrectRounds(prev => prev + 1);
-
-            setTimeout(() => {
-                if (gameActive && !isGameFinished) {
-                    setupNewRound();
-                }
-            }, 1200);
-
-        } else {
-            // Jawaban salah
-            setFeedback({
-                [selectedOption]: 'wrong',
-                [correctAnswer]: 'correct'
-            });
-
-            // ✨ 6. Panggil loseLife versi sederhana dan biarkan useEffect yang menanganinya
-            loseLife();
-
-            // Atur timeout untuk ronde berikutnya jika nyawa masih ada
-            setTimeout(() => {
-                if (gameActive && !isGameFinished && lives > 1) { // Cek lives > 1 karena update state async
-                    setupNewRound();
-                }
-            }, 1200);
-        }
-    };
-
-    // useEffect lainnya tetap sama
     useEffect(() => {
         if (gameActive) {
             setIsGameFinished(false);
