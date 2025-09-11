@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useGame } from "@/app/game/_context/GameContext";
 import { gameData } from "@/config/game.config";
@@ -8,14 +9,34 @@ import {
     shuffleArray,
     findFixedIndices
 } from "@/utils/number";
-import NumberSlots from "./NumberSlots";
+import NumberSlots from "@/app/game/kedip/NumberSlots";
 import TerbilangBox from "@/app/game/_components/TerbilangBox";
 
-// Helper function untuk membuat opsi salah (bisa tetap di sini atau dipindah ke utils)
-function generateWrongOptions(targetNumberStr: string, difficultyLevel: "mudah" | "sedang" | "sulit", count: number): string[] {
-    const result = new Set<string>();
-    const correctText = terbilang(Number(targetNumberStr));
-    const originalDigits = targetNumberStr.split('');
+export default function Kedip() {
+    // == CONTEXT ==
+    const { lives, addScore, loseLife, endGame, gameActive, difficulty, isCountdown, setOnTimeUpCallback } = useGame();
+    const gameModeConfig = gameData.banyak.find(m => m.path === 'kedip');
+    if (!gameModeConfig) {
+        throw new Error("Konfigurasi untuk mode game 'kedip' tidak ditemukan.");
+    }
+
+    // == STATE ==
+    const [targetNumber, setTargetNumber] = useState('');
+    const [options, setOptions] = useState<Array<{ text: string; isCorrect: boolean; status: 'normal' | 'wrong' | 'correct' }>>([]);
+    const [currentOptionIndex, setCurrentOptionIndex] = useState(0);
+    const [fixedIndices, setFixedIndices] = useState<number[]>([]);
+    const [blinkPositions, setBlinkPositions] = useState<number[]>([]);
+    const [isRoundFinished, setIsRoundFinished] = useState(false); // New state to manage round completion
+    const [isGameFinished, setIsGameFinished] = useState(false);
+    const [correctRounds, setCorrectRounds] = useState(0);
+
+    // == REFS FOR INTERVALS ==
+    const blinkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const roundTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const prevBlinkPositionsRef = useRef<number[]>([]);
+    const prevBlinkPositions2Ref = useRef<number[]>([]);
+
+    // == HELPERS ==
     const pickPermutation = (triple: string): string | null => {
         const chars = triple.split('');
         const perms = new Set<string>();
@@ -34,15 +55,15 @@ function generateWrongOptions(targetNumberStr: string, difficultyLevel: "mudah" 
         if (candidates.length === 0) return null;
         return candidates[Math.floor(Math.random() * candidates.length)];
     };
-    let attempts = 0;
-    while (result.size < count && attempts < 500) {
-        attempts++;
+
+    function createPermutedNumber(originalDigits: string, difficultyLevel: 'mudah' | 'sedang' | 'sulit'): string | null {
         const candidateDigits = [...originalDigits];
         const triplesCount = Math.floor(originalDigits.length / 3);
         const triplesToPermuteCount = difficultyLevel === 'mudah' ? 1 : 2;
+
         const shuffledTripleIndices = shuffleArray(Array.from({ length: triplesCount }, (_, i) => i));
         const triplesToChange = shuffledTripleIndices.slice(0, triplesToPermuteCount);
-        let isValidPermutation = true;
+
         for (const tripleIndex of triplesToChange) {
             const start = tripleIndex * 3;
             const triple = candidateDigits.slice(start, start + 3).join('');
@@ -50,49 +71,40 @@ function generateWrongOptions(targetNumberStr: string, difficultyLevel: "mudah" 
             if (perm) {
                 candidateDigits.splice(start, 3, ...perm.split(''));
             } else {
-                isValidPermutation = false;
-                break;
+                return null; // Gagal membuat permutasi
             }
         }
-        if (isValidPermutation) {
-            const wrongText = terbilang(Number(candidateDigits.join('')));
-            if (wrongText !== correctText) {
-                result.add(wrongText);
+        return candidateDigits.join(''); // Mengembalikan angka dalam bentuk string
+    }
+
+    function generateWrongOptions(targetNumberStr: string, difficultyLevel: 'mudah' | 'sedang' | 'sulit', count: number): string[] {
+        const result = new Set<string>();
+        const correctText = terbilang(Number(targetNumberStr));
+        let attempts = 0;
+
+        while (result.size < count && attempts < 500) {
+            attempts++;
+            const permutedNumberStr = createPermutedNumber(targetNumberStr, difficultyLevel);
+
+            if (permutedNumberStr) {
+                const wrongText = terbilang(Number(permutedNumberStr));
+                if (wrongText !== correctText) {
+                    result.add(wrongText);
+                }
             }
         }
+
+        return Array.from(result);
     }
-    return Array.from(result);
-}
-
-export default function Kedip() {
-    const { lives, addScore, loseLife, endGame, gameActive, difficulty, isCountdown, setOnTimeUpCallback } = useGame();
-
-    const gameModeConfig = gameData.banyak.find(m => m.path === 'kedip');
-    if (!gameModeConfig) {
-        throw new Error("Konfigurasi untuk mode game 'kedip' tidak ditemukan.");
-    }
-
-    const [targetNumber, setTargetNumber] = useState('');
-    const [options, setOptions] = useState<Array<{ text: string; isCorrect: boolean; status: 'normal' | 'wrong' | 'correct' }>>([]);
-    const [currentOptionIndex, setCurrentOptionIndex] = useState(0);
-    const [fixedIndices, setFixedIndices] = useState<number[]>([]);
-    const [blinkPositions, setBlinkPositions] = useState<number[]>([]);
-    // isAnsweredInRound tidak lagi digunakan untuk disable tombol, hanya untuk reveal digits
-    const [isRoundFinished, setIsRoundFinished] = useState(false); // New state to manage round completion
-    const [isGameFinished, setIsGameFinished] = useState(false);
-    const [correctRounds, setCorrectRounds] = useState(0);
-
-    const blinkIntervalRef = useRef<NodeJS.Timeout | null>(null);
-    const roundTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const prevBlinkPositionsRef = useRef<number[]>([]);
-    const prevBlinkPositions2Ref = useRef<number[]>([]);
 
     const chooseBlinkPositions = useCallback(() => {
         const digits = targetNumber.split('');
         if (digits.length === 0) return;
+
         const recentPositions = new Set([...prevBlinkPositionsRef.current, ...prevBlinkPositions2Ref.current]);
         const candidates = Array.from({ length: digits.length }, (_, i) => i)
             .filter(i => !fixedIndices.includes(i) && !recentPositions.has(i));
+
         let newPositions: number[] = [];
         if (difficulty === "mudah") {
             if (candidates.length > 0) newPositions = [candidates[Math.floor(Math.random() * candidates.length)]];
@@ -100,35 +112,81 @@ export default function Kedip() {
             shuffleArray(candidates);
             newPositions = candidates.slice(0, 2);
         }
+
         prevBlinkPositions2Ref.current = prevBlinkPositionsRef.current;
         prevBlinkPositionsRef.current = newPositions;
         setBlinkPositions(newPositions);
     }, [targetNumber, difficulty, fixedIndices]);
 
-    // PERBAIKAN 1: `setupNewRound` sekarang bersih, hanya menyiapkan data.
     const setupNewRound = useCallback(() => {
         setIsRoundFinished(false);
         setCurrentOptionIndex(0);
+
         const num = generateRandomNumberByDifficulty(difficulty);
         const numDigits = num.split('');
         const currentFixedIndices = difficulty === "mudah" ? findFixedIndices(numDigits) : [];
-        setTargetNumber(num);
-        setFixedIndices(currentFixedIndices);
+
         const correctText = terbilang(Number(num));
         const wrongTexts = generateWrongOptions(num, difficulty, 7);
         const allOptionsText = shuffleArray([correctText, ...wrongTexts]);
+
+        setTargetNumber(num);
+        setFixedIndices(currentFixedIndices);
         setOptions(allOptionsText.map(txt => ({
             text: txt,
             isCorrect: txt === correctText,
             status: 'normal',
         })));
-        // `setInterval` dipindahkan dari sini
-    }, [difficulty]); // Dependensi stabil
+    }, [difficulty]);
+
+
+    // == HANDLERS ==
+    const handleSubmit = () => {
+        if (isGameFinished || !gameActive) return;
+
+        const selectedOption = options[currentOptionIndex];
+
+        // Jawaban benar:
+        if (selectedOption.isCorrect) {
+            addScore(gameModeConfig.difficulty[difficulty].score.correct);
+            setCorrectRounds(prev => prev + 1);
+
+            const newOptions = [...options];
+            newOptions[currentOptionIndex].status = 'correct';
+            setOptions(newOptions);
+            setIsRoundFinished(true);
+
+            // Hentikan interval kedip dan timeout ronde sebelumnya
+            if (blinkIntervalRef.current) clearInterval(blinkIntervalRef.current);
+            setBlinkPositions([]);
+
+            roundTimeoutRef.current = setTimeout(() => {
+                if (gameActive && !isGameFinished) {
+                    setupNewRound();
+                }
+            }, 1500);
+        } else {
+            const newOptions = [...options];
+            newOptions[currentOptionIndex].status = 'wrong';
+            setOptions(newOptions);
+            loseLife();
+        }
+    };
+
+    const handlePrevOption = () => {
+        if (isRoundFinished || !gameActive) return;
+        setCurrentOptionIndex(prev => (prev - 1 + options.length) % options.length);
+    };
+
+    const handleNextOption = () => {
+        if (isRoundFinished || !gameActive) return;
+        setCurrentOptionIndex(prev => (prev + 1) % options.length);
+    };
 
     const handleEndGame = useCallback((title: string, message: string) => {
         if (isGameFinished) return;
         setIsGameFinished(true);
-        setIsRoundFinished(true); // Ensure game elements are static
+        setIsRoundFinished(true);
 
         if (blinkIntervalRef.current) clearInterval(blinkIntervalRef.current);
         if (roundTimeoutRef.current) clearTimeout(roundTimeoutRef.current);
@@ -155,84 +213,17 @@ export default function Kedip() {
         handleEndGame("Waktu Habis!", "Waktu Anda telah habis.");
     }, [handleEndGame]);
 
-    // PERBAIKAN 2: `useEffect` utama untuk memulai game, sekarang dengan dependensi yang stabil.
+    // == EFFECTS ==
     useEffect(() => {
         if (gameActive && !isCountdown) {
             setIsGameFinished(false);
-            setCorrectRounds(0); // Reset score ronde
             setupNewRound();
-        }
-    }, [gameActive, isCountdown, setupNewRound]); // `setupNewRound` sekarang stabil
-
-    useEffect(() => {
-        setOnTimeUpCallback(() => handleTimeUp);
-        return () => {
-            setOnTimeUpCallback(null);
-        };
-    }, [setOnTimeUpCallback, handleTimeUp]);
-
-    useEffect(() => {
-        if (lives <= 0 && gameActive) {
-            handleEndGame("Game Over", "Nyawa Anda habis.");
-        }
-    }, [lives, gameActive, handleEndGame]);
-
-    const handleSubmit = () => {
-        if (isGameFinished || !gameActive) return; // Prevent submitting if game is over or not active
-
-        const selectedOption = options[currentOptionIndex];
-
-        if (selectedOption.isCorrect) {
-            addScore(gameModeConfig.difficulty[difficulty].score.correct);
-            setCorrectRounds(prev => prev + 1);
-
-            const newOptions = [...options];
-            newOptions[currentOptionIndex].status = 'correct';
-            setOptions(newOptions);
-            setIsRoundFinished(true); // Mark round as finished
-
-            // Stop blinking after correct answer
+        } else {
             if (blinkIntervalRef.current) clearInterval(blinkIntervalRef.current);
             setBlinkPositions([]);
-
-            roundTimeoutRef.current = setTimeout(() => {
-                if (gameActive && !isGameFinished) {
-                    setupNewRound();
-                }
-            }, 1500);
-
-        } else {
-            // Jawaban salah:
-            // 1. Set status opsi yang salah menjadi 'wrong'
-            const newOptions = [...options];
-            newOptions[currentOptionIndex].status = 'wrong';
-            setOptions(newOptions);
-
-            // 2. Kurangi nyawa
-            loseLife();
         }
-    };
 
-    // Navigasi
-    const handlePrevOption = () => {
-        if (isRoundFinished || !gameActive) return;
-        setCurrentOptionIndex(prev => (prev - 1 + options.length) % options.length);
-    };
-
-    const handleNextOption = () => {
-        if (isRoundFinished || !gameActive) return;
-        setCurrentOptionIndex(prev => (prev + 1) % options.length);
-    };
-
-    useEffect(() => {
-        if (gameActive && !isCountdown) { // Start new round only when game is active and countdown is over
-            setIsGameFinished(false);
-            setupNewRound();
-        } else {
-            if (blinkIntervalRef.current) clearInterval(blinkIntervalRef.current);
-            setBlinkPositions([]); // Clear blinking positions when game is not active
-        }
-        return () => { // Cleanup on unmount or gameActive change
+        return () => {
             if (blinkIntervalRef.current) clearInterval(blinkIntervalRef.current);
             if (roundTimeoutRef.current) clearTimeout(roundTimeoutRef.current);
         };
@@ -248,20 +239,19 @@ export default function Kedip() {
         }
     }, [isCountdown]);
 
-    // useEffect KHUSUS untuk interval kedip (berjalan jika game aktif DAN ronde belum selesai)
     useEffect(() => {
+        // Pastikan interval hanya berjalan saat game aktif dan ronde belum selesai
         if (gameActive && !isRoundFinished && !isGameFinished && targetNumber) {
-            // Ensure interval is running only if targetNumber is available
             if (!blinkIntervalRef.current) {
                 blinkIntervalRef.current = setInterval(chooseBlinkPositions, 700);
             }
         } else {
             if (blinkIntervalRef.current) {
                 clearInterval(blinkIntervalRef.current);
-                blinkIntervalRef.current = null; // Clear ref
+                blinkIntervalRef.current = null;
             }
             if (isRoundFinished || isGameFinished) {
-                setBlinkPositions([]); // Clear blinking positions when round/game is finished
+                setBlinkPositions([]);
             }
         }
         return () => {
@@ -272,7 +262,28 @@ export default function Kedip() {
         };
     }, [gameActive, isRoundFinished, isGameFinished, chooseBlinkPositions, targetNumber]); // Added targetNumber as dependency
 
-    // Helper untuk styling
+    useEffect(() => {
+        if (gameActive && !isCountdown) {
+            setIsGameFinished(false);
+            setCorrectRounds(0);
+            setupNewRound();
+        }
+    }, [gameActive, isCountdown, setupNewRound]);
+
+    useEffect(() => {
+        setOnTimeUpCallback(() => handleTimeUp);
+        return () => {
+            setOnTimeUpCallback(null);
+        };
+    }, [setOnTimeUpCallback, handleTimeUp]);
+
+    useEffect(() => {
+        if (lives <= 0 && gameActive) {
+            handleEndGame("Game Over", "Nyawa Anda habis.");
+        }
+    }, [lives, gameActive, handleEndGame]);
+
+    // == RENDER ==
     const currentOption = options.length > 0 ? options[currentOptionIndex] : null;
     let viewerClass = 'bg-gray-100 border-2 border-gray-300';
     if (currentOption?.status === 'correct') viewerClass = 'bg-green-200 border-2 border-green-400 text-green-800';
@@ -287,18 +298,28 @@ export default function Kedip() {
                 revealDigits={isRoundFinished || !gameActive} // Reveal all if round finished or game not active
                 countdownActive={isCountdown}
             />
-            
+
             <TerbilangBox isCountdown={isCountdown} customClassName={viewerClass}>
                 {currentOption?.text}
             </TerbilangBox>
 
             <div className="flex flex-col items-center justify-center gap-4 mt-6">
                 <div className="flex items-center justify-center gap-4">
-                    <button onClick={handlePrevOption} disabled={isRoundFinished || !gameActive} className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">Prev</button>
+                    <button onClick={handlePrevOption}
+                        disabled={isRoundFinished || !gameActive}
+                        className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Prev
+                    </button>
                     <span className="font-bold text-white">{options.length > 0 ? `${currentOptionIndex + 1} / ${options.length}` : '0 / 0'}</span>
-                    <button onClick={handleNextOption} disabled={isRoundFinished || !gameActive} className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+                    <button onClick={handleNextOption}
+                        disabled={isRoundFinished || !gameActive}
+                        className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Next
+                    </button>
                 </div>
-                <button onClick={handleSubmit} disabled={isRoundFinished || !gameActive} className="px-10 py-3 rounded-xl bg-green-600 hover:bg-green-700 hover:cursor-pointer text-white font-bold text-lg disabled:bg-gray-400 disabled:cursor-not-allowed">
+                <button onClick={handleSubmit}
+                    disabled={isRoundFinished || !gameActive}
+                    className="px-10 py-3 rounded-xl bg-green-600 hover:bg-green-700 hover:cursor-pointer text-white font-bold text-lg disabled:bg-gray-400 disabled:cursor-not-allowed">
                     Submit
                 </button>
             </div>
