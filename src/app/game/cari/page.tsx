@@ -1,21 +1,21 @@
 "use client";
+
+import { terbilang, generateRandomNumberByDifficulty, findFixedIndices } from "@/utils/number";
 import { useState, useCallback, useEffect } from "react";
 import { useGame } from "@/app/game/_context/GameContext";
-import { terbilang, generateRandomNumberByDifficulty, findFixedIndices } from "@/utils/number";
-import NumberSlots from "./NumberSlots";
-import TerbilangBox from "@/app/game/_components/TerbilangBox";
 import { gameData } from "@/config/game.config";
+import NumberSlots from "@/app/game/cari/NumberSlots";
+import TerbilangBox from "@/app/game/_components/TerbilangBox";
 
 export default function Cari() {
-    // ✨ 1. Ambil 'lives' dan 'setOnTimeUpCallback' dari context
+    // == CONTEXT ==
     const { lives, addScore, loseLife, endGame, gameActive, difficulty, isCountdown, setOnTimeUpCallback } = useGame();
-
     const gameModeConfig = gameData.banyak.find(m => m.path === 'cari');
     if (!gameModeConfig) {
         throw new Error("Konfigurasi untuk mode game 'cari' tidak ditemukan.");
     }
 
-    // State lokal tidak berubah
+    // == STATE ==
     const [hasilTerbilang, setHasilTerbilang] = useState("");
     const [displayDigits, setDisplayDigits] = useState<string[]>([]);
     const [wrongIndices, setWrongIndices] = useState<number[]>([]);
@@ -25,6 +25,49 @@ export default function Cari() {
     const [isCorrect, setIsCorrect] = useState(false);
     const [correctRounds, setCorrectRounds] = useState(0);
 
+    // == HELPERS ==
+    const injectWrongDigits = (targetDigits: string[], difficulty: string) => {
+        const newDisplayDigits = [...targetDigits];
+        const newWrongIndices: number[] = [];
+        const fixedIndices = difficulty === 'mudah' ? findFixedIndices(targetDigits) : [];
+
+        const usedIndices = new Set();
+
+        // Tentukan jumlah angka salah berdasarkan kesulitan
+        const wrongCount = (difficulty === "mudah") ? (Math.floor(Math.random() * 3) + 1) :
+            (difficulty === "sedang") ? (Math.floor(Math.random() * 5) + 1) :
+                (Math.floor(Math.random() * 8));
+
+        // Loop untuk mencari posisi dan menyisipkan angka yang salah
+        while (newWrongIndices.length < wrongCount) {
+            const idx = Math.floor(Math.random() * targetDigits.length);
+
+            // Lewati jika indeks sudah dipakai, merupakan indeks tetap, atau berdekatan dengan indeks salah lainnya
+            if (usedIndices.has(idx) || fixedIndices.includes(idx) || newWrongIndices.some(existing => Math.abs(existing - idx) <= 1)) {
+                continue;
+            }
+
+            usedIndices.add(idx);
+            newWrongIndices.push(idx);
+        }
+
+        // Ganti digit pada indeks yang salah dengan digit acak yang berbeda
+        newWrongIndices.forEach(idx => {
+            const originalDigit = targetDigits[idx];
+            let newDigit;
+            do {
+                newDigit = String(Math.floor(Math.random() * 10));
+            } while (newDigit === originalDigit);
+
+            newDisplayDigits[idx] = newDigit;
+        });
+
+        return {
+            displayDigits: newDisplayDigits,
+            wrongIndices: newWrongIndices,
+        };
+    };
+
     const setupNewRound = useCallback(() => {
         setSelectedIndices([]);
         setWrongIndices([]);
@@ -33,88 +76,22 @@ export default function Cari() {
 
         const targetNumber = generateRandomNumberByDifficulty(difficulty);
         const targetDigits = targetNumber.split("");
-        const newDisplayDigits = [...targetDigits];
-        const newWrongIndices: number[] = [];
 
-        // --- Logika injectWrongDigits dari Vanilla JS ---
-        const fixedIndices = difficulty === 'mudah' ? findFixedIndices(targetDigits) : [];
-        const usedIndices = new Set<number>();
-        const wrongCount = (difficulty === "mudah") ? (Math.floor(Math.random() * 3) + 1) :
-            (difficulty === "sedang") ? (Math.floor(Math.random() * 5) + 1) : (Math.floor(Math.random() * 8));
-
-        while (newWrongIndices.length < wrongCount) {
-            const idx = Math.floor(Math.random() * targetDigits.length);
-            if (usedIndices.has(idx) || fixedIndices.includes(idx) || newWrongIndices.some(existing => Math.abs(existing - idx) <= 1)) continue;
-            usedIndices.add(idx);
-            newWrongIndices.push(idx);
-        }
-
-        newWrongIndices.forEach(idx => {
-            const original = targetDigits[idx];
-            let newDigit;
-            do {
-                newDigit = String(Math.floor(Math.random() * 10));
-            } while (newDigit === original);
-            newDisplayDigits[idx] = newDigit;
-        });
-        // --- Akhir logika injectWrongDigits ---
+        const { displayDigits, wrongIndices } = injectWrongDigits(targetDigits, difficulty);
 
         setHasilTerbilang(terbilang(Number(targetNumber)));
-        setDisplayDigits(newDisplayDigits);
-        setWrongIndices(newWrongIndices);
+        setDisplayDigits(displayDigits);
+        setWrongIndices(wrongIndices);
 
     }, [difficulty]);
 
+    // == HANDLER ==
     const handleSlotClick = (index: number) => {
         if (isGameFinished) return;
         setSelectedIndices(prev =>
             prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
         );
     };
-
-    // ✨ 2. Pindahkan logika skor akhir ke handleEndGame
-    const handleEndGame = useCallback((title: string, message: string) => {
-        if (isGameFinished) return;
-        setIsGameFinished(true);
-
-        const scoreDetail = gameModeConfig.difficulty[difficulty].score;
-        const totalScore = correctRounds * scoreDetail.correct;
-
-        const overlayMessage = (
-            <div className="text-left space-y-1">
-                <p>{message}</p><hr className="my-2" />
-                <div className="grid grid-cols-2 gap-x-4 text-sm sm:text-base">
-                    <span>Jawaban Benar</span>
-                    <span className="text-right">{correctRounds} x {scoreDetail.correct} = {totalScore}</span>
-                    <span className="font-bold">Total Skor</span>
-                    <span className="text-right font-bold">{totalScore}</span>
-                </div>
-            </div>
-        );
-
-        endGame({ title, message: overlayMessage });
-    }, [isGameFinished, endGame, correctRounds, difficulty, gameModeConfig]);
-
-    // ✨ 3. Buat "surat instruksi" untuk Boss jika waktu habis
-    const handleTimeUp = useCallback(() => {
-        handleEndGame("Waktu Habis!", "Waktu Anda telah habis.");
-    }, [handleEndGame]);
-
-    // ✨ 4. Terapkan pola "Amplop": Daftarkan instruksi ke Boss
-    useEffect(() => {
-        setOnTimeUpCallback(() => handleTimeUp);
-        return () => {
-            setOnTimeUpCallback(null);
-        };
-    }, [setOnTimeUpCallback, handleTimeUp]);
-
-    // ✨ 5. Terapkan pola Reaktif: Awasi nyawa
-    useEffect(() => {
-        if (lives <= 0 && gameActive) {
-            handleEndGame("Game Over", "Nyawa Anda habis.");
-        }
-    }, [lives, gameActive, handleEndGame]);
-
 
     const handleCheckAnswer = () => {
         if (isGameFinished) return;
@@ -147,6 +124,46 @@ export default function Cari() {
         }
     };
 
+    const handleEndGame = useCallback((title: string, message: string) => {
+        if (isGameFinished) return;
+        setIsGameFinished(true);
+
+        const scoreDetail = gameModeConfig.difficulty[difficulty].score;
+        const totalScore = correctRounds * scoreDetail.correct;
+
+        const overlayMessage = (
+            <div className="text-left space-y-1">
+                <p>{message}</p><hr className="my-2" />
+                <div className="grid grid-cols-2 gap-x-4 text-sm sm:text-base">
+                    <span>Jawaban Benar</span>
+                    <span className="text-right">{correctRounds} x {scoreDetail.correct} = {totalScore}</span>
+                    <span className="font-bold">Total Skor</span>
+                    <span className="text-right font-bold">{totalScore}</span>
+                </div>
+            </div>
+        );
+
+        endGame({ title, message: overlayMessage });
+    }, [isGameFinished, endGame, correctRounds, difficulty, gameModeConfig]);
+
+    const handleTimeUp = useCallback(() => {
+        handleEndGame("Waktu Habis!", "Waktu Anda telah habis.");
+    }, [handleEndGame]);
+
+    // == EFFECTS ==
+    useEffect(() => {
+        setOnTimeUpCallback(() => handleTimeUp);
+        return () => {
+            setOnTimeUpCallback(null);
+        };
+    }, [setOnTimeUpCallback, handleTimeUp]);
+
+    useEffect(() => {
+        if (lives <= 0 && gameActive) {
+            handleEndGame("Game Over", "Nyawa Anda habis.");
+        }
+    }, [lives, gameActive, handleEndGame]);
+
     useEffect(() => {
         if (gameActive) {
             setCorrectRounds(0);
@@ -161,6 +178,7 @@ export default function Cari() {
         }
     }, [isCountdown]);
 
+    // == RENDER ==
     return (
         <div>
             <div className="flex flex-col items-center">

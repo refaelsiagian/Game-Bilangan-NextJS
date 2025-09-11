@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import NumberSlotsBase from "@/app/game/_components/NumberSlotsBase";
 
