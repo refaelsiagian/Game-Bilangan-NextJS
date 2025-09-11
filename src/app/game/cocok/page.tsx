@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect, useCallback } from "react";
 import { useGame } from "@/app/game/_context/GameContext";
 import { gameData } from "@/config/game.config";
@@ -8,18 +9,17 @@ import {
     shuffleArray,
     findFixedIndices
 } from "@/utils/number";
-import NumberSlots from "./NumberSlots";
+import NumberSlots from "@/app/game/cocok/NumberSlots";
 
 export default function Cocok() {
-    // ✨ 1. Ambil 'setOnTimeUpCallback' dari context
+    // == CONTEXT ==
     const { addScore, loseLife, endGame, gameActive, difficulty, isCountdown, lives, setOnTimeUpCallback } = useGame();
-
     const gameModeConfig = gameData.banyak.find(m => m.path === 'cocok');
     if (!gameModeConfig) {
         throw new Error("Konfigurasi untuk mode game 'cocok' tidak ditemukan.");
     }
 
-    // State lokal tidak berubah
+    // == STATE ==
     const [targetNumber, setTargetNumber] = useState('');
     const [options, setOptions] = useState<string[]>([]);
     const [correctAnswer, setCorrectAnswer] = useState('');
@@ -30,7 +30,7 @@ export default function Cocok() {
     const [hintIndices, setHintIndices] = useState<number[]>([]);
     const [revealDigits, setRevealDigits] = useState<boolean>(false);
 
-    // ... (createWrongOption dan helper-nya tidak perlu diubah) ...
+    // == HELPERS ===
     const createWrongOption = useCallback((
         currentTargetNumber: string,
         hintPositions: number[]
@@ -78,7 +78,9 @@ export default function Cocok() {
             }
             if (possibleDestinations.length > 0) {
                 const swapPos = possibleDestinations[Math.floor(Math.random() * possibleDestinations.length)];
-                return { posToSwap, swapPos };
+                if (digits[posToSwap] !== digits[swapPos]) {
+                    return { posToSwap, swapPos };
+                }
             }
         }
         console.warn("Fallback swap triggered: No hint could be swapped with its neighbor.");
@@ -99,41 +101,66 @@ export default function Cocok() {
         return targetTriples.every((val, index) => val === wrongTriples[index]);
     }
 
-    const setupNewRound = useCallback(() => {
-        setFeedback({});
-        setAnswered(false);
-        setRevealDigits(false);
-        // Dapatkan pengaturan dari config
+    const generateHintPositions = useCallback((
+        digits: string[], 
+        difficulty: 'mudah' | 'sedang' | 'sulit', 
+        fixedIndices: number[]
+    ) => {
         const hintCount = { mudah: 3, sedang: 5, sulit: 5 }[difficulty];
-        const num = generateRandomNumberByDifficulty(difficulty);
-        const digits = num.split('');
-        const fixedIndices = difficulty === "mudah" ? findFixedIndices(digits) : [];
-        const availableIndices = digits.map((_, i) => i).filter(i => !fixedIndices.includes(i));
-        const currentHintPositions: number[] = [];
+        const availableIndices = digits
+            .map((_, i) => i)
+            .filter(i => !fixedIndices.includes(i));
+
+        const currentHintPositions = [];
         while (currentHintPositions.length < hintCount && availableIndices.length > 0) {
             const randIdx = Math.floor(Math.random() * availableIndices.length);
             const nextPos = availableIndices[randIdx];
-            const isClose = difficulty === "sulit" ? currentHintPositions.some(existing => Math.abs(existing - nextPos) <= 1) : false;
+
+            // Logika khusus untuk tingkat 'sulit' agar hint tidak berdekatan
+            const isClose = difficulty === "sulit"
+                ? currentHintPositions.some(existing => Math.abs(existing - nextPos) <= 1)
+                : false;
+
             if (!isClose) {
                 currentHintPositions.push(nextPos);
                 availableIndices.splice(randIdx, 1);
             }
         }
-        setHintIndices(currentHintPositions);
-        const correctAnswerText = terbilang(Number(num));
-        const currentOptions = [correctAnswerText];
-        while (currentOptions.length < 4) {
-            const wrongNum = createWrongOption(num, currentHintPositions);
+        return currentHintPositions;
+    }, []);
+
+    const generateAnswerOptions = useCallback((correctNumber: string, hintPositions: number[]) => {
+        const correctAnswerText = terbilang(Number(correctNumber));
+        const options = [correctAnswerText];
+
+        while (options.length < 4) {
+            // Kita asumsikan createWrongOption sudah tersedia dari konteks sebelumnya
+            const wrongNum = createWrongOption(correctNumber, hintPositions);
             const wrongText = terbilang(Number(wrongNum));
-            if (!currentOptions.includes(wrongText)) {
-                currentOptions.push(wrongText);
+
+            if (!options.includes(wrongText)) {
+                options.push(wrongText);
             }
         }
+        return options;
+    }, [createWrongOption]);
+
+    const setupNewRound = useCallback(() => {
+        setFeedback({});
+        setAnswered(false);
+        setRevealDigits(false);
+
+        const num = generateRandomNumberByDifficulty(difficulty);
+        const digits = num.split('');
+        const fixedIndices = difficulty === "mudah" ? findFixedIndices(digits) : [];
+        const hintPositions = generateHintPositions(digits, difficulty, fixedIndices);
+        const allOptions = generateAnswerOptions(num, hintPositions);
+        
         setTargetNumber(num);
-        setOptions(shuffleArray(currentOptions));
-        setHintIndices([...currentHintPositions, ...fixedIndices]);
-        setCorrectAnswer(correctAnswerText);
-    }, [difficulty, createWrongOption]);
+        setOptions(shuffleArray(allOptions));
+        setHintIndices([...hintPositions, ...fixedIndices]);
+        setCorrectAnswer(terbilang(Number(num)));
+    }, [difficulty, generateHintPositions, generateAnswerOptions]);
 
     // ✨ 2. Pindahkan logika skor akhir ke handleEndGame
     const handleEndGame = useCallback((title: string, message: string) => {
