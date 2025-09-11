@@ -1,17 +1,18 @@
 "use client";
+
+import { terbilang, generateRandomNumberByDifficulty, findFixedIndices } from "@/utils/number";
 import { useState, useCallback, useEffect } from "react";
 import { useGame } from "@/app/game/_context/GameContext";
-import { terbilang, generateRandomNumberByDifficulty, findFixedIndices } from "@/utils/number";
-import NumberSlots from "./NumberSlots";
-import TerbilangBox from "@/app/game/_components/TerbilangBox";
 import { gameData } from "@/config/game.config";
+import NumberSlots from "@/app/game/isi/NumberSlots";
+import TerbilangBox from "@/app/game/_components/TerbilangBox";
 
 export default function Isi() {
-    // ✨ 1. Ambil 'lives' dan 'setOnTimeUpCallback' dari context
+    // == CONTEXT ==
     const { lives, addScore, loseLife, endGame, gameActive, difficulty, timer, isCountdown, setOnTimeUpCallback } = useGame();
     const scoreDetail = gameData.cepat.find(m => m.path === 'isi')?.difficulty[difficulty].score;
 
-    // State lokal tidak berubah
+    // == STATE ==
     const [targetNumber, setTargetNumber] = useState("");
     const [hasilTerbilang, setHasilTerbilang] = useState("");
     const [filledSlots, setFilledSlots] = useState<{ [index: number]: string }>({});
@@ -21,7 +22,7 @@ export default function Isi() {
     const [flashError, setFlashError] = useState(false);
     const [correctDigitsCount, setCorrectDigitsCount] = useState(0);
 
-    // Fungsi-fungsi pembantu tidak berubah
+    // == HELPERS ===
     const highlightNextSlot = useCallback((currentTargetNumber: string, currentFilled: { [index: number]: string }, currentFixed: number[]) => {
         const remainingIndices = [];
         for (let i = 0; i < currentTargetNumber.length; i++) {
@@ -30,11 +31,12 @@ export default function Isi() {
             }
         }
 
+        // Pilih salah satu slot yang belum diisi secara acak untuk disorot
         if (remainingIndices.length > 0) {
             const randomIndex = remainingIndices[Math.floor(Math.random() * remainingIndices.length)];
             setHighlightedIndex(randomIndex);
         } else {
-            setHighlightedIndex(null); // Tidak ada lagi yang bisa disorot
+            setHighlightedIndex(null);
         }
     }, []);
 
@@ -54,7 +56,35 @@ export default function Isi() {
         highlightNextSlot(newTargetNumber, newFilledSlots, newFixedIndices);
     }, [difficulty, highlightNextSlot]);
 
-    // ✨ 1. Ubah `handleEndGame` untuk menerima argumen `isWinCondition`
+    // == HANDLERS ==
+    const handleNumberClick = (num: number) => {
+        if (highlightedIndex === null || isGameFinished || !gameActive) return;
+
+        const correctDigit = targetNumber[highlightedIndex];
+
+        // Cek apakah digit yang dipilih benar
+        if (String(num) === correctDigit) {
+            const newFilledSlots = { ...filledSlots, [highlightedIndex]: correctDigit };
+            setFilledSlots(newFilledSlots);
+            addScore(scoreDetail?.correct ?? 0);
+            setCorrectDigitsCount(prev => prev + 1);
+
+            const isRoundWon = Object.keys(newFilledSlots).length + fixedIndices.length === targetNumber.length;
+            if (isRoundWon) {
+                handleEndGame("Selamat!", "Anda menyelesaikan ronde ini.", true);
+            } else {
+                highlightNextSlot(targetNumber, newFilledSlots, fixedIndices);
+            }
+        } else {
+            loseLife();
+            setFlashError(true);
+            setTimeout(() => setFlashError(false), 300);
+            if (difficulty === 'sulit') {
+                highlightNextSlot(targetNumber, filledSlots, fixedIndices);
+            }
+        }
+    };
+
     const handleEndGame = useCallback((title: string, message: string, isWinCondition: boolean) => {
         if (isGameFinished) return;
         setIsGameFinished(true);
@@ -89,63 +119,25 @@ export default function Isi() {
         endGame({ title, message: overlayMessage });
     }, [endGame, correctDigitsCount, difficulty, isGameFinished, scoreDetail, timer]);
 
-    // ✨ 2. Buat "surat instruksi" untuk Boss jika waktu habis
     const handleTimeUp = useCallback(() => {
         handleEndGame("Waktu Habis!", "Waktu Anda telah habis.", false);
     }, [handleEndGame]);
 
-    // ✨ 3. Terapkan pola "Amplop": Daftarkan instruksi ke Boss
+    // == EFFECTS ==
     useEffect(() => {
-        // "Boss, ini surat instruksiku jika waktu habis."
         setOnTimeUpCallback(() => handleTimeUp);
 
-        // "Boss, aku pergi. Ambil kembali suratku agar amplopmu bersih."
         return () => {
             setOnTimeUpCallback(null);
         };
     }, [setOnTimeUpCallback, handleTimeUp]);
 
-    // ✨ 4. Terapkan pola Reaktif: Awasi nyawa
     useEffect(() => {
-        // Jika nyawa habis dan permainan masih aktif...
         if (lives <= 0 && gameActive) {
             handleEndGame("Game Over", "Nyawa Anda habis.", false);
         }
     }, [lives, gameActive, handleEndGame]);
 
-
-    const handleNumberClick = (num: number) => {
-        if (highlightedIndex === null || isGameFinished || !gameActive) return;
-
-        const correctDigit = targetNumber[highlightedIndex];
-
-        if (String(num) === correctDigit) {
-            // Jawaban BENAR
-            const newFilledSlots = { ...filledSlots, [highlightedIndex]: correctDigit };
-            setFilledSlots(newFilledSlots);
-            // Hapus addScore dari sini agar tidak dipanggil berkali-kali
-            addScore(scoreDetail?.correct ?? 0);
-            setCorrectDigitsCount(prev => prev + 1);
-
-            const isRoundWon = Object.keys(newFilledSlots).length + fixedIndices.length === targetNumber.length;
-            if (isRoundWon) {
-                handleEndGame("Selamat!", "Anda menyelesaikan ronde ini.", true);
-            } else {
-                highlightNextSlot(targetNumber, newFilledSlots, fixedIndices);
-            }
-        } else {
-            // Jawaban SALAH
-            // ✨ 5. Panggil loseLife versi sederhana
-            loseLife();
-            setFlashError(true);
-            setTimeout(() => setFlashError(false), 300);
-            if (difficulty === 'sulit') {
-                highlightNextSlot(targetNumber, filledSlots, fixedIndices);
-            }
-        }
-    };
-
-    // useEffect untuk setup ronde dan countdown tidak berubah
     useEffect(() => {
         if (gameActive) setupNewRound();
     }, [gameActive, setupNewRound]);
@@ -159,12 +151,7 @@ export default function Isi() {
         }
     }, [isCountdown]);
 
-    // ✨ 6. HAPUS useEffect yang lama untuk timer
-    // useEffect(() => {
-    //     if (timer <= 0 && gameActive) handleEndGame("Waktu Habis!", "Waktu Anda telah habis.");
-    // }, [timer, gameActive, handleEndGame]);
-
-    // ... sisa kode JSX untuk render ...
+    // == RENDER ==
     const numberButtons = [7, 8, 9, 4, 5, 6, 1, 2, 3, 0];
     return (
         <div className="flex flex-col items-center w-full max-w-4xl mx-auto">
