@@ -1,7 +1,5 @@
-"use client";
-
 import NumberSlotsBase from "@/app/game/_components/NumberSlotsBase";
-import React from "react"; // Impor React untuk Fragment
+import React from "react";
 
 type Props = {
     targetNumber: string;
@@ -15,7 +13,6 @@ export default function NumberSlots({ targetNumber, isCountdown }: Props) {
     return (
         <NumberSlotsBase isLoading={isCountdown} placeholderLength={15}>
             {digits.map((digit, index) => (
-                // Gunakan React.Fragment agar key bisa diterapkan pada grup elemen
                 <React.Fragment key={`cell-group-${index}`}>
                     <span className="target-number-item target-digit">
                         {digit}

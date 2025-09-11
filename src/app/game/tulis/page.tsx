@@ -1,11 +1,12 @@
 "use client";
 
+import { terbilang, generateRandomNumberByDifficulty } from "@/utils/number";
 import { useState, useCallback, useEffect } from "react";
 import { useGame } from "@/app/game/_context/GameContext";
-import { terbilang, generateRandomNumberByDifficulty } from "@/utils/number";
 import { gameData } from "@/config/game.config";
 import { JSX } from "react";
-import NumberSlots from "./NumberSlots"; // Impor komponen baru
+
+import NumberSlots from "@/app/game/tulis/NumberSlots";
 import TerbilangBox from "@/app/game/_components/TerbilangBox";
 
 const angkaDasar = ["nol", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan"];
@@ -13,23 +14,18 @@ const satuan = ["puluh", "belas", "ratus", "ribu", "juta", "miliar", "triliun"];
 const khusus = ["sepuluh", "sebelas", "seratus", "seribu"];
 
 export default function TulisGamePage() {
+
+    // == CONTEXT ==
     const { lives, addScore, loseLife, endGame, gameActive, difficulty, timer, isCountdown, setOnTimeUpCallback } = useGame();
 
+    // == STATE ==
     const [targetNumber, setTargetNumber] = useState<string>("");
     const [kataArray, setKataArray] = useState<string[]>([]);
     const [flashError, setFlashError] = useState(false);
     const [highlightedAnswer, setHighlightedAnswer] = useState<JSX.Element | null>(null);
     const [isGameFinished, setIsGameFinished] = useState(false);
 
-    const setupNewRound = useCallback(() => {
-        const num = generateRandomNumberByDifficulty(difficulty);
-        setTargetNumber(num);
-        setKataArray([]);
-        setHighlightedAnswer(null);
-        setIsGameFinished(false);
-    }, [difficulty]);
-
-    // Fungsi MURNI untuk menghitung dan membuat JSX highlight
+    // == HELPER ==
     const createHighlightedAnswer = useCallback((user: string, correct: string): { jsx: JSX.Element, count: number } => {
         const userWords = user.split(" ").filter(w => w);
         const correctWords = correct.split(" ");
@@ -51,25 +47,30 @@ export default function TulisGamePage() {
         return { jsx, count: correctCount };
     }, []);
 
-    // Fungsi MURNI untuk menyiapkan pesan di overlay
     const prepareEndGameMessage = useCallback((msg: string, isWin: boolean, wordsCorrect: number): JSX.Element => {
+        // Hitung skor
         const scoreConfig = gameData.cepat.find(m => m.path === 'tulis')?.difficulty[difficulty].score;
         const pointsCorrect = wordsCorrect * (scoreConfig?.correct || 0);
         const pointsCompleted = isWin ? (scoreConfig?.completed || 0) : 0;
         const pointsTimeBonus = isWin ? timer * (scoreConfig?.timeBonus || 0) : 0;
         const totalPoints = pointsCorrect + pointsCompleted + pointsTimeBonus;
 
-        // Tambahkan skor ke context HANYA di sini
         addScore(pointsCorrect);
 
         return (
             <div className="text-left space-y-1">
                 <p>{msg}</p> <hr className="my-2" />
                 <div className="grid grid-cols-2 gap-x-4 text-sm sm:text-base">
-                    {isWin && <><span>Selesai</span><span className="text-right">{pointsCompleted}</span></>}
+                    {isWin && <>
+                        <span>Selesai</span>
+                        <span className="text-right">{pointsCompleted}</span>
+                    </>}
                     <span>Kata Benar</span>
                     <span className="text-right">{wordsCorrect} x {scoreConfig?.correct} = {pointsCorrect}</span>
-                    {isWin && <><span>Bonus Waktu</span><span className="text-right">{timer} x {scoreConfig?.timeBonus} = {pointsTimeBonus}</span></>}
+                    {isWin && <>
+                        <span>Bonus Waktu</span>
+                        <span className="text-right">{timer} x {scoreConfig?.timeBonus} = {pointsTimeBonus}</span>
+                    </>}
                     <span className="font-bold">Total Skor</span>
                     <span className="text-right font-bold">{totalPoints}</span>
                 </div>
@@ -77,6 +78,15 @@ export default function TulisGamePage() {
         );
     }, [addScore, difficulty, timer]);
 
+    const setupNewRound = useCallback(() => {
+        const num = generateRandomNumberByDifficulty(difficulty);
+        setTargetNumber(num);
+        setKataArray([]);
+        setHighlightedAnswer(null);
+        setIsGameFinished(false);
+    }, [difficulty]);
+
+    // == HANDLER ==
     const handleEndGame = useCallback((title: string, message: string, isWin: boolean) => {
         setIsGameFinished(true);
         const jawabanUser = kataArray.join(" ").trim();
@@ -89,7 +99,6 @@ export default function TulisGamePage() {
         endGame({ title, message: endMessage });
     }, [targetNumber, kataArray, createHighlightedAnswer, prepareEndGameMessage, endGame]);
 
-    // Fungsi ini TIDAK perlu diubah, karena akan dipanggil oleh useEffect di bawah
     const handleTimeUp = useCallback(() => {
         const jawabanBenar = terbilang(Number(targetNumber));
         handleEndGame(
@@ -97,39 +106,7 @@ export default function TulisGamePage() {
             `Waktumu habis. Jawaban yang benar adalah: ${jawabanBenar}`,
             false
         );
-    }, [targetNumber, handleEndGame]); // Tambahkan dependensi yang relevan
-
-    useEffect(() => {
-        // FASE 1: "MENARUH SURAT"
-        // Ini berjalan saat komponen muncul (mount) atau dependensinya berubah.
-        // "Boss, ini surat instruksi dariku."
-        setOnTimeUpCallback(() => handleTimeUp);
-
-        // FASE 2: "MENGAMBIL KEMBALI SURAT" (Cleanup Function)
-        // Ini berjalan TEPAT SEBELUM komponen pergi (unmount)
-        // atau TEPAT SEBELUM efek ini berjalan lagi.
-        return () => {
-            // "Boss, aku akan pergi. Aku ambil kembali surat instruksiku
-            // agar amplopmu bersih dan tidak ada instruksi usang."
-            setOnTimeUpCallback(null);
-        };
-    }, [setOnTimeUpCallback, handleTimeUp]);
-
-    useEffect(() => {
-        if (gameActive) {
-            setupNewRound();
-        }
-    }, [gameActive, setupNewRound]);
-
-    // ✨ EFEK BARU: Membersihkan papan SAAT countdown dimulai
-    useEffect(() => {
-        if (isCountdown) {
-            setKataArray([]);
-            setHighlightedAnswer(null);
-            setTargetNumber(""); // Kosongkan target number agar NumberSlots menampilkan placeholder
-            setIsGameFinished(false);
-        }
-    }, [isCountdown]);
+    }, [handleEndGame, targetNumber]);
 
     const handleSubmit = () => {
         if (!gameActive || isGameFinished) return;
@@ -145,20 +122,41 @@ export default function TulisGamePage() {
         }
     };
 
+    // == EFFECT ==
     useEffect(() => {
-        // Jika nyawa habis DAN permainan belum selesai...
+        setOnTimeUpCallback(() => handleTimeUp);
+
+        return () => {
+            setOnTimeUpCallback(null);
+        };
+    }, [setOnTimeUpCallback, handleTimeUp]);
+
+    useEffect(() => {
+        if (gameActive) {
+            setupNewRound();
+        }
+    }, [gameActive, setupNewRound]);
+
+    useEffect(() => {
+        if (isCountdown) {
+            setKataArray([]);
+            setHighlightedAnswer(null);
+            setTargetNumber("");
+            setIsGameFinished(false);
+        }
+    }, [isCountdown]);
+
+    useEffect(() => {
         if (lives <= 0 && gameActive) {
-            // ... jalankan logika game over yang spesifik untuk mode ini
             const jawabanBenar = terbilang(Number(targetNumber));
             handleEndGame("Game Over", `Nyawamu habis. Jawaban yang benar adalah: ${jawabanBenar}`, false);
         }
-        // Awasi perubahan 'lives' dan 'gameActive'
     }, [lives, gameActive, handleEndGame, targetNumber]);
 
-    // 5. Render UI yang spesifik untuk gameplay mode Tulis
+    // == RENDER ==
     return (
         <div className="flex flex-col items-center">
-            {/* Target Number Display */}
+
             <NumberSlots targetNumber={targetNumber} isCountdown={isCountdown} />
 
             <TerbilangBox isCountdown={isCountdown} flashError={flashError} isMuted={isCountdown || kataArray.length === 0}>
