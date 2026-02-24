@@ -37,7 +37,6 @@ export function GameProvider({
     const [score, setScore] = useState(0);
     const [lives, setLives] = useState(3);
     const [timer, setTimer] = useState(120);
-    const [difficulty, setDifficulty] = useState<"mudah" | "sedang" | "sulit">(initialDifficulty);
     const [gameActive, setGameActive] = useState(false);
     const [isPreGame, setIsPreGame] = useState(true);
     const [isCountdown, setIsCountdown] = useState(false);
@@ -120,7 +119,7 @@ export function GameProvider({
 
     // ✨ LANGKAH 4: Berikan "kotak surat" kepada semua Karyawan
     const value = {
-        score, lives, timer, gameActive, difficulty, isPreGame, isCountdown,
+        score, lives, timer, gameActive, difficulty: initialDifficulty, isPreGame, isCountdown,
         addScore, loseLife, endGame,
         setOnTimeUpCallback, // Sekarang Karyawan bisa mengakses ini
     };

@@ -15,8 +15,8 @@ export default function MainMenu() {
     const [difficulty, setDifficulty] = useState<Record<string, string>>({});
     const [loadingMode, setLoadingMode] = useState<string | null>(null);
     const getDifficulty = (modeName: string) => difficulty[modeName] ?? "mudah";
-    const router = useRouter(); 
-    
+    const router = useRouter();
+
     // == HANDLER ===
     const handlePlay = (modePath: string, modeName: string) => {
         setLoadingMode(modeName);
@@ -28,8 +28,9 @@ export default function MainMenu() {
     // == RENDER ==
     return (
         <main className="min-h-screen flex flex-col items-center p-6">
-            <h1 className="text-4xl font-bold mb-6 text-amber-400">Game Bilangan</h1>
-
+            <h1 className="text-7xl pr-2 font-bold bg-gradient-to-r from-amber-500 via-purple-500 via-90% to-blue-500 bg-clip-text text-transparent mb-4">
+                snoxe
+            </h1>
             {/* Tombol kategori */}
             <div className="flex gap-4 mb-8">
                 <button
@@ -62,7 +63,7 @@ export default function MainMenu() {
                             const isOpen = expanded === mode.name;
                             const isLoading = loadingMode === mode.name;
 
-                            {/* Daftar opsi kesulitan */}
+                            {/* Daftar opsi kesulitan */ }
                             const difficultyOptionsForThisMode = Object.keys(mode.difficulty).map(key => ({
                                 value: key,
                                 name: key.charAt(0).toUpperCase() + key.slice(1),
