@@ -27,6 +27,7 @@ export default function GamePilih() {
     const [currentDigit, setCurrentDigit] = useState<string | null>(null);
     const [isGameFinished, setIsGameFinished] = useState(false);
     const [correctDigitsCount, setCorrectDigitsCount] = useState(0);
+    const [fixedIndices, setFixedIndices] = useState<number[]>([]);
 
     // == HELPER ==
     const setupNewRound = useCallback(() => {
@@ -43,7 +44,7 @@ export default function GamePilih() {
 
         // Untuk mode mudah, tetapkan beberapa digit sebagai tetap
         if (difficulty === "mudah") {
-            const fixedIndices = findFixedIndices(digits);
+            setFixedIndices(findFixedIndices(digits));
             fixedIndices.forEach(idx => {
                 initialFilled[idx] = digits[idx];
             });
@@ -64,7 +65,7 @@ export default function GamePilih() {
         setPendingDigits(initialPending);
         setCurrentDigit(initialPending.pop() ?? null);
         setFilledSlots(initialFilled);
-    }, [difficulty]);
+    }, [difficulty, fixedIndices]);
 
     // == HANDLER ===
     const handleSlotClick = (index: number) => {
@@ -186,7 +187,7 @@ export default function GamePilih() {
                 digits={targetDigits}
                 filledSlots={filledSlots}
                 onSlotClick={handleSlotClick}
-                fixedIndices={findFixedIndices(targetDigits)}
+                fixedIndices={fixedIndices}
                 countdownActive={isCountdown}
                 displayLength={15}
                 gameEnded={isGameFinished}
